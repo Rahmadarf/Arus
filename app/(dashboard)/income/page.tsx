@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import TransactionForm from '@/components/transaction-form'
-import InfiniteTransactionList`` from '@/components/infinite-transaction-list'
+import InfiniteTransactionList from '@/components/infinite-transaction-list'
 
 interface PageProps {
   searchParams: Promise<{ edit?: string }>
@@ -58,7 +58,7 @@ export default async function IncomePage({ searchParams }: PageProps) {
             
             {/* Serahkan data awal ke Klien untuk Infinite Scroll */}
             <InfiniteTransactionList 
-              initialTransactions={history || []} 
+              initialTransactions={history as any || []} 
               type="income" 
             />
 
