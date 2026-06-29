@@ -2,7 +2,19 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { Database } from '@/types/supabase'
 import { z } from 'zod'
+
+export type TransactionWithCategory = Database['public']['Tables']['transactions']['Row'] & {
+  categories: { name: string; emoji: string } | { name: string; emoji: string }[] | null
+}
+
+export interface TransactionFilters {
+  year?: string
+  month?: string
+  categoryId?: string
+  search?: string
+}
 
 // 1. Definisikan Skema Validasi Transaksi
 const transactionSchema = z.object({
@@ -43,7 +55,7 @@ export async function createTransaction(formData: FormData) {
   const { error } = await supabase.from('transactions').insert([
     {
       user_id: user.id,
-      ...validatedFields.data, 
+      ...validatedFields.data,
     },
   ])
 
@@ -115,32 +127,85 @@ export async function deleteTransaction(id: string) {
   revalidatePath('/')
   revalidatePath('/income')
   revalidatePath('/expense')
-  
+
   return { success: true }
 }
 
 
-export async function fetchMoreTransactions(type: 'income' | 'expense', cursor: string, limit = 10) {
+export async function fetchMoreTransactions(
+  type: 'income' | 'expense',
+  lastCursor?: string,
+  filters?: TransactionFilters // Parameter opsional baru
+) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) return { error: 'Unauthorized', data: null }
+  if (!user) return { data: null, error: 'Sesi habis.' }
 
-  // Kueri Kursor: Ambil transaksi yang "dibuat lebih lama" (kurang dari) kursor saat ini
-  const { data, error } = await supabase
+  // 1. Kueri Dasar (Belum dieksekusi)
+  let query = supabase
     .from('transactions')
-    .select(`id, description, amount, transaction_date, created_at, category_id, categories (name, emoji)`)
+    .select(`
+      id, 
+      description, 
+      amount, 
+      transaction_date, 
+      created_at, 
+      category_id, 
+      categories (name, emoji)
+    `)
+    .eq('user_id', user.id)
     .eq('type', type)
-    .lt('created_at', cursor)
-    .order('created_at', { ascending: false })
-    .limit(limit)
 
-  if (error) {
-    console.error('Pagination Error:', error.message)
-    return { error: error.message, data: null }
+  // 2. Injeksi Filter Dinamis (Query Chaining)
+  if (filters) {
+    // Filter Pencarian (Search by Description)
+    if (filters.search) {
+      query = query.ilike('description', `%${filters.search}%`)
+    }
+
+    // Filter Kategori Spesifik
+    if (filters.categoryId) {
+      query = query.eq('category_id', filters.categoryId)
+    }
+
+    // Filter Rentang Waktu (Bulan & Tahun)
+    if (filters.year) {
+      if (filters.month) {
+        // Jika ada tahun dan bulan: Ambil dari tanggal 1 sampai hari terakhir bulan tersebut
+        const startDate = `${filters.year}-${filters.month}-01`
+        // Trik JS untuk mendapatkan hari terakhir dalam suatu bulan
+        const endDay = new Date(Number(filters.year), Number(filters.month), 0).getDate()
+        const endDate = `${filters.year}-${filters.month}-${endDay}`
+
+        query = query.gte('transaction_date', startDate).lte('transaction_date', endDate)
+      } else {
+        // Jika hanya tahun: Ambil dari 1 Januari sampai 31 Desember
+        const startDate = `${filters.year}-01-01`
+        const endDate = `${filters.year}-12-31`
+
+        query = query.gte('transaction_date', startDate).lte('transaction_date', endDate)
+      }
+    }
   }
 
-  return { error: null, data }
+  // 3. Kursor untuk Infinite Scroll
+  if (lastCursor) {
+    query = query.lt('created_at', lastCursor)
+  }
+
+  // 4. Eksekusi Mutlak
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  if (error) {
+    console.error('Fetch error:', error.message)
+    return { data: null, error: error.message }
+  }
+
+  return { data: data as TransactionWithCategory[], error: null }
+
 }
 
 
@@ -173,4 +238,79 @@ export async function getRecentTransactions(limit: number = 5) {
   }
 
   return { data, error: null }
+}
+
+
+export async function getAllFilteredTransactions(
+  type: 'income' | 'expense',
+  filters: TransactionFilters
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { data: null, error: 'Sesi habis.' }
+
+  let query = supabase
+    .from('transactions')
+    .select(`
+      id, 
+      description, 
+      amount, 
+      transaction_date, 
+      categories (name)
+    `)
+    .eq('user_id', user.id)
+    .eq('type', type)
+
+  // Terapkan filter yang sama persis
+  if (filters.search) query = query.ilike('description', `%${filters.search}%`)
+  if (filters.categoryId) query = query.eq('category_id', filters.categoryId)
+  if (filters.year) {
+    if (filters.month) {
+      const startDate = `${filters.year}-${filters.month}-01`
+      const endDay = new Date(Number(filters.year), Number(filters.month), 0).getDate()
+      const endDate = `${filters.year}-${filters.month}-${endDay}`
+      query = query.gte('transaction_date', startDate).lte('transaction_date', endDate)
+    } else {
+      const startDate = `${filters.year}-01-01`
+      const endDate = `${filters.year}-12-31`
+      query = query.gte('transaction_date', startDate).lte('transaction_date', endDate)
+    }
+  }
+
+  // Urutkan berdasarkan tanggal transaksi terupdate
+  const { data, error } = await query.order('transaction_date', { ascending: false })
+
+  if (error) return { data: null, error: error.message }
+  return { data, error: null }
+}
+
+
+export async function getMonthlyTrend(type: 'income' | 'expense') {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  // Tarik data 30 hari terakhir untuk tren grafik
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  const { data } = await supabase
+    .from('transactions')
+    .select('amount, transaction_date')
+    .eq('user_id', user.id)
+    .eq('type', type)
+    .gte('transaction_date', thirtyDaysAgo.toISOString())
+    .order('transaction_date', { ascending: true })
+
+  // Agregasi data (jumlahkan amount per hari)
+  const grouped = data?.reduce((acc: any, curr) => {
+    acc[curr.transaction_date] = (acc[curr.transaction_date] || 0) + Number(curr.amount)
+    return acc
+  }, {})
+
+  return Object.keys(grouped || {}).map(date => ({
+    date: date.slice(8, 10), // Ambil tanggal (01, 02, dst)
+    amount: grouped[date]
+  }))
 }

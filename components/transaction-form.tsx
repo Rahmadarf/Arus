@@ -39,14 +39,31 @@ export default function TransactionForm({ type, categories, initialData }: Trans
   const isEditMode = !!initialData
   const isIncome = type === 'income'
 
+  const [displayAmount, setDisplayAmount] = useState('') // Untuk layar (1.000.000)
+  const [rawAmount, setRawAmount] = useState('')         // Untuk server (1000000)
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Sapu bersih semua karakter kecuali angka murni menggunakan Regex
+    const rawValue = e.target.value.replace(/\D/g, '')
+    setRawAmount(rawValue)
+
+    // Jika ada angka, format ke standar Indonesia (titik per ribuan)
+    if (rawValue) {
+      const formatted = new Intl.NumberFormat('id-ID').format(Number(rawValue))
+      setDisplayAmount(formatted)
+    } else {
+      setDisplayAmount('')
+    }
+  }
+
   // Sinkronisasi data ke form jika mode edit aktif
   useEffect(() => {
     if (isEditMode && initialData && formRef.current) {
       const form = formRef.current
-      ;(form.elements.namedItem('description') as HTMLInputElement).value = initialData.description
-      ;(form.elements.namedItem('amount') as HTMLInputElement).value = initialData.amount.toString()
-      ;(form.elements.namedItem('transaction_date') as HTMLInputElement).value = initialData.transaction_date
-      ;(form.elements.namedItem('category_id') as HTMLSelectElement).value = initialData.category_id
+        ; (form.elements.namedItem('description') as HTMLInputElement).value = initialData.description
+        ; (form.elements.namedItem('amount') as HTMLInputElement).value = initialData.amount.toString()
+        ; (form.elements.namedItem('transaction_date') as HTMLInputElement).value = initialData.transaction_date
+        ; (form.elements.namedItem('category_id') as HTMLSelectElement).value = initialData.category_id
     }
   }, [initialData, isEditMode])
 
@@ -74,6 +91,8 @@ export default function TransactionForm({ type, categories, initialData }: Trans
         formRef.current?.reset()
       } else {
         // Keluar dari mode edit dengan membersihkan kueri parameter di URL
+        setDisplayAmount('')
+        setRawAmount('')
         router.push(`/${type}`)
       }
     }
@@ -119,24 +138,32 @@ export default function TransactionForm({ type, categories, initialData }: Trans
           />
         </div>
 
-        <div className="space-y-1.5">
-          <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="amount">
-            <Wallet className="h-3.5 w-3.5 text-zinc-400" />
-            Nominal (Rupiah)
+        <div>
+          <label htmlFor="display_amount" className="block text-sm font-medium text-zinc-900 dark:text-zinc-50">
+            Jumlah (Rp)
           </label>
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">
-              Rp
-            </span>
+          <div className="mt-1 relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="text-zinc-500 sm:text-sm">Rp</span>
+            </div>
             <input
-              id="amount"
-              name="amount"
-              type="number"
-              step="0.01"
+              type="text" /* HARUS type text, bukan number, agar titik tidak dihapus oleh peramban */
+              id="display_amount"
+              value={displayAmount}
+              onChange={handleAmountChange}
+              placeholder="0"
               required
-              className="flex h-10 w-full rounded-md border border-zinc-200 bg-transparent pl-9 pr-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:border-zinc-400 dark:border-zinc-800 dark:focus-visible:ring-zinc-600/50"
+              className="pl-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm placeholder:text-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
+
+          {/* TAKTIK MUTLAK: Input tersembunyi yang akan dikirim ke Server Action */}
+          <input
+            type="hidden"
+            name="amount"
+            value={rawAmount}
+            required
+          />
         </div>
 
         <div className="space-y-1.5">
@@ -176,9 +203,8 @@ export default function TransactionForm({ type, categories, initialData }: Trans
         <button
           type="submit"
           disabled={loading}
-          className={`w-full inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-zinc-50 shadow transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
-            isIncome ? 'bg-emerald-600 hover:bg-emerald-600/90' : 'bg-zinc-900 hover:bg-zinc-900/90'
-          }`}
+          className={`w-full inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-zinc-50 shadow transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${isIncome ? 'bg-emerald-600 hover:bg-emerald-600/90' : 'bg-zinc-900 hover:bg-zinc-900/90'
+            }`}
         >
           {loading ? (
             <>

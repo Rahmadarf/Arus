@@ -81,3 +81,42 @@ export async function deleteCategory(id: string) {
   revalidatePath('/expense')
   return { success: true }
 }
+
+export async function seedDefaultCategories() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return
+
+  // 1. Hitung jumlah kategori yang dimiliki pengguna saat ini
+  const { count, error } = await supabase
+    .from('categories')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('Gagal memverifikasi kategori:', error.message)
+    return
+  }
+
+  // 2. Jika kosong mutlak (pengguna baru), suntikkan fondasi data
+  if (count === 0) {
+    const defaultCategories = [
+      { user_id: user.id, name: 'Gaji', emoji: '💰', type: 'income' },
+      { user_id: user.id, name: 'Investasi', emoji: '📈', type: 'income' },
+      { user_id: user.id, name: 'Makanan & Minuman', emoji: '🍔', type: 'expense' },
+      { user_id: user.id, name: 'Transportasi', emoji: '🚗', type: 'expense' },
+      { user_id: user.id, name: 'Belanja', emoji: '🛒', type: 'expense' },
+      { user_id: user.id, name: 'Tagihan bulanan', emoji: '📄', type: 'expense' },
+      { user_id: user.id, name: 'Hiburan', emoji: '🎮', type: 'expense' }
+    ]
+
+    const { error: insertError } = await supabase
+      .from('categories')
+      .insert(defaultCategories)
+
+    if (insertError) {
+      console.error('Gagal menyuntikkan kategori default:', insertError.message)
+    }
+  }
+}

@@ -2,10 +2,12 @@ import { createClient } from '@/utils/supabase/server'
 import ChartsWrapper from './chart-wrapper'
 import Link from 'next/link'
 import { getRecentTransactions } from '@/actions/transactions'
+import { seedDefaultCategories } from '@/actions/categories'
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  await seedDefaultCategories()
   const { data: recentTransactions } = await getRecentTransactions(5)
 
   // 1. Hitung batas tanggal secara presisi di level server
