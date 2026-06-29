@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BukuKu - Personal Finance Tracker
 
-## Getting Started
+BukuKu adalah aplikasi pelacak keuangan personal yang dibangun dengan arsitektur modern untuk efisiensi, kecepatan, dan ketajaman visual. Aplikasi ini membantu pengguna mencatat pemasukan dan pengeluaran secara terstruktur dengan visualisasi data yang intuitif.
 
-First, run the development server:
+## 🚀 Fitur Utama
+- **Real-time Finance Tracking**: Catat transaksi dengan mudah menggunakan antarmuka yang responsif.
+- **Data Visualization**: Pantau tren arus kas bulanan melalui grafik interaktif yang dinamis.
+- **Smart Filtering**: Cari dan filter transaksi berdasarkan kategori, bulan, tahun, atau deskripsi tanpa *reload* halaman.
+- **Professional Export**: Ekspor laporan keuangan ke format PDF secara instan untuk kebutuhan dokumentasi.
+- **Dark/Light Mode**: Antarmuka yang ramah mata dengan dukungan *system theme*.
+- **Auto-Onboarding**: Sistem *seeding* kategori otomatis bagi pengguna baru.
 
-```bash
+## 🛠 Tech Stack
+Aplikasi ini dibangun menggunakan *cutting-edge technology*:
+- **Framework**: [Next.js 15+](https://nextjs.org/) (App Router)
+- **Language**: TypeScript
+- **Database**: [Supabase](https://supabase.com/) (PostgreSQL)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Charts**: [Recharts](https://recharts.org/)
+- **PDF Generation**: [jsPDF](https://jspdf.com/) & [jsPDF-AutoTable](https://github.com/simonbengtsson/jsPDF-AutoTable)
+
+## 🏗 Arsitektur
+Aplikasi ini mengutamakan **Server-Side Rendering (SSR)** untuk performa maksimal dan keamanan data. Seluruh logika transaksi diproses melalui *Server Actions* untuk menjamin konsistensi data dan keamanan *Row Level Security* (RLS) di sisi database.
+
+## 📦 Instalasi
+Untuk menjalankan proyek ini secara lokal:
+
+1. Clone repositori:
+   ```bash
+   git clone [https://github.com/username/bukuku.git](https://github.com/username/bukuku.git)
+   cd bukuku
+Instal dependensi:
+
+Bash
+npm install
+Konfigurasi environment variables (.env.local):
+
+Cuplikan kode
+NEXT_PUBLIC_SUPABASE_URL=your_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
+Jalankan server pengembangan:
+
+Bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+📊 Roadmap Masa Depan
+[ ] Budget & Limit Management per kategori.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+[ ] Recurring Transaction (Reminder otomatis).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+[ ] Multi-account/Multi-wallet support.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+👨‍💻 Kontributor
+Rahmad Arifin Susilo - Fullstack Web Developer
 
-## Learn More
+Proyek ini merupakan implementasi praktik terbaik dalam pengembangan aplikasi web modern.
 
-To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Tips Profesional untuk GitHub-mu:
+1. **Ganti Placeholder:** Pastikan kamu mengubah `username/bukuku` di bagian `git clone` menjadi URL repositori aslimu.
+2. **Screenshot:** Tambahkan satu atau dua tangkapan layar (screenshot) aplikasi yang sudah jadi tepat setelah bagian "Fitur Utama". Kamu bisa menaruh file gambar di folder `/public`, lalu menambahkannya di markdown dengan sintaks: `![Dashboard Screenshot](/dashboard.png)`. Visual jauh lebih menjual daripada teks.
+3. **Commit yang Disiplin:** Jangan lakukan `git push` dengan pesan "update". Gunakan konvensi sepe
