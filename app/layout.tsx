@@ -18,6 +18,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Arus",
   description: "Kendali Arus Kas, Raih Target Tabungan.",
+  authors: [{ name: 'Rahmad Arifin Susilo', url: 'https://github.com/Rahmadarf' }],
+  creator: "Rahmad Arifin Susilo"
 };
 
 export default function RootLayout({
