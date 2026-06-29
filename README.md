@@ -1,6 +1,6 @@
-# TrackFlow - Personal Finance Tracker
+# Arus - Personal Finance Tracker
 
-TrackFlow adalah aplikasi pelacak keuangan personal yang dibangun dengan arsitektur modern untuk efisiensi, kecepatan, dan ketajaman visual. Aplikasi ini membantu pengguna mencatat pemasukan dan pengeluaran secara terstruktur dengan visualisasi data yang intuitif.
+Arus adalah aplikasi pelacak keuangan personal yang dibangun dengan arsitektur modern untuk efisiensi, kecepatan, dan ketajaman visual. Aplikasi ini membantu pengguna mencatat pemasukan dan pengeluaran secara terstruktur dengan visualisasi data yang intuitif.
 
 ## 🚀 Fitur Utama
 - **Real-time Finance Tracking**: Catat transaksi dengan mudah menggunakan antarmuka yang responsif.
