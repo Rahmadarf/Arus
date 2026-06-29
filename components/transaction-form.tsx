@@ -3,6 +3,15 @@
 import { useState, useRef, useEffect } from 'react'
 import { createTransaction, updateTransaction } from '@/actions/transactions'
 import { useRouter } from 'next/navigation'
+import {
+  Tag,
+  Wallet,
+  CalendarDays,
+  FolderOpen,
+  Save,
+  X,
+  Loader2,
+} from 'lucide-react'
 
 interface Category {
   id: string
@@ -28,6 +37,7 @@ export default function TransactionForm({ type, categories, initialData }: Trans
   const formRef = useRef<HTMLFormElement>(null)
   const router = useRouter()
   const isEditMode = !!initialData
+  const isIncome = type === 'income'
 
   // Sinkronisasi data ke form jika mode edit aktif
   useEffect(() => {
@@ -73,14 +83,15 @@ export default function TransactionForm({ type, categories, initialData }: Trans
     <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-          {isEditMode ? 'Edit' : 'Catat'} {type === 'income' ? 'Pemasukan' : 'Pengeluaran'}
+          {isEditMode ? 'Edit' : 'Catat'} {isIncome ? 'Pemasukan' : 'Pengeluaran'}
         </h2>
         {isEditMode && (
           <button
             type="button"
             onClick={() => router.push(`/${type}`)}
-            className="text-xs text-zinc-500 hover:underline"
+            className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-700 hover:underline dark:hover:text-zinc-300"
           >
+            <X className="h-3.5 w-3.5" />
             Batal Edit
           </button>
         )}
@@ -94,7 +105,8 @@ export default function TransactionForm({ type, categories, initialData }: Trans
         )}
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="description">
+          <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="description">
+            <Tag className="h-3.5 w-3.5 text-zinc-400" />
             Sumber / Deskripsi
           </label>
           <input
@@ -102,27 +114,34 @@ export default function TransactionForm({ type, categories, initialData }: Trans
             name="description"
             type="text"
             required
-            placeholder={type === 'income' ? 'Contoh: Gaji Bulanan' : 'Contoh: Beli Makan'}
-            className="flex h-10 w-full rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 dark:border-zinc-800"
+            placeholder={isIncome ? 'Contoh: Gaji Bulanan' : 'Contoh: Beli Makan'}
+            className="flex h-10 w-full rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:border-zinc-400 dark:border-zinc-800 dark:focus-visible:ring-zinc-600/50"
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="amount">
+          <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="amount">
+            <Wallet className="h-3.5 w-3.5 text-zinc-400" />
             Nominal (Rupiah)
           </label>
-          <input
-            id="amount"
-            name="amount"
-            type="number"
-            step="0.01"
-            required
-            className="flex h-10 w-full rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 dark:border-zinc-800"
-          />
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">
+              Rp
+            </span>
+            <input
+              id="amount"
+              name="amount"
+              type="number"
+              step="0.01"
+              required
+              className="flex h-10 w-full rounded-md border border-zinc-200 bg-transparent pl-9 pr-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:border-zinc-400 dark:border-zinc-800 dark:focus-visible:ring-zinc-600/50"
+            />
+          </div>
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="transaction_date">
+          <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="transaction_date">
+            <CalendarDays className="h-3.5 w-3.5 text-zinc-400" />
             Tanggal Transaksi
           </label>
           <input
@@ -130,19 +149,20 @@ export default function TransactionForm({ type, categories, initialData }: Trans
             name="transaction_date"
             type="date"
             required
-            className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+            className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-visible:ring-zinc-600/50"
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="category_id">
+          <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="category_id">
+            <FolderOpen className="h-3.5 w-3.5 text-zinc-400" />
             Pilih Kategori
           </label>
           <select
             id="category_id"
             name="category_id"
             required
-            className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+            className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-visible:ring-zinc-600/50"
           >
             <option value="">-- Pilih Kategori --</option>
             {categories.map((cat) => (
@@ -156,11 +176,21 @@ export default function TransactionForm({ type, categories, initialData }: Trans
         <button
           type="submit"
           disabled={loading}
-          className={`w-full inline-flex h-10 items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-zinc-50 shadow transition-colors ${
-            type === 'income' ? 'bg-emerald-600 hover:bg-emerald-600/90' : 'bg-zinc-900 hover:bg-zinc-900/90'
+          className={`w-full inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-zinc-50 shadow transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
+            isIncome ? 'bg-emerald-600 hover:bg-emerald-600/90' : 'bg-zinc-900 hover:bg-zinc-900/90'
           }`}
         >
-          {loading ? 'Menyimpan...' : isEditMode ? 'Perbarui Data' : 'Simpan Transaksi'}
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Menyimpan...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" />
+              {isEditMode ? 'Perbarui Data' : 'Simpan Transaksi'}
+            </>
+          )}
         </button>
       </form>
     </div>

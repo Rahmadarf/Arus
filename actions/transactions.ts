@@ -142,3 +142,35 @@ export async function fetchMoreTransactions(type: 'income' | 'expense', cursor: 
 
   return { error: null, data }
 }
+
+
+
+export async function getRecentTransactions(limit: number = 5) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { data: null, error: 'Sesi habis.' }
+
+  // Tarik data campuran (income & expense) berdasarkan tanggal terbaru
+  const { data, error } = await supabase
+    .from('transactions')
+    .select(`
+      id, 
+      description, 
+      amount, 
+      transaction_date, 
+      type, 
+      categories (name, emoji)
+    `)
+    .eq('user_id', user.id)
+    .order('transaction_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('Gagal menarik transaksi terakhir:', error.message)
+    return { data: null, error: error.message }
+  }
+
+  return { data, error: null }
+}

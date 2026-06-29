@@ -7,10 +7,11 @@ interface DashboardChartsProps {
   donutData: { name: string; value: number }[]
   lineData: { date: string; income: number; expense: number }[]
   summary: { totalIncome: number; totalExpense: number; balance: number }
+  trend: { incomeChange: number; expenseChange: number }
 }
 
 // Eksekusi dynamic import secara sah di dalam area Klien
-const DashboardCharts = dynamic(() => import('./dashboard-charts'), { 
+const DashboardCharts = dynamic(() => import('./dashboard-charts'), {
   ssr: false,
   loading: () => (
     <div className="grid gap-6 md:grid-cols-2 mt-8">

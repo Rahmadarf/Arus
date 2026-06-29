@@ -4,13 +4,14 @@ import { useState, useRef, useEffect } from 'react'
 import { createCategory } from '@/actions/categories'
 import data from '@emoji-mart/data'
 import { Picker } from 'emoji-mart'
+import { Smile, Tag, ArrowLeftRight, Save, ChevronDown } from 'lucide-react'
 
 export default function CategoryForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [chosenEmoji, setChosenEmoji] = useState('💰')
   const [showPicker, setShowPicker] = useState(false)
-  
+
   const formRef = useRef<HTMLFormElement>(null)
   const pickerWrapperRef = useRef<HTMLDivElement>(null)
   const pickerContainerRef = useRef<HTMLDivElement>(null)
@@ -38,11 +39,11 @@ export default function CategoryForm() {
           setShowPicker(false)
         },
       })
-      
+
       // Sisipkan Web Component mentah (<em-emoji-picker>) ke dalam div
       pickerContainerRef.current.appendChild(picker as unknown as Node)
     }
-    
+
     // Cleanup: Kosongkan isi div jika picker ditutup agar tidak terjadi duplikasi elemen
     if (!showPicker && pickerContainerRef.current) {
       pickerContainerRef.current.innerHTML = ''
@@ -84,26 +85,31 @@ export default function CategoryForm() {
         )}
 
         <div className="space-y-1.5 relative" ref={pickerWrapperRef}>
-          <label className="text-sm font-medium">Pilih Emoji</label>
+          <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <Smile className="h-3.5 w-3.5 text-zinc-400" />
+            Pilih Emoji
+          </label>
           <div>
             <button
               type="button"
               onClick={() => setShowPicker(!showPicker)}
-              className="flex h-12 w-12 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-2xl shadow-sm hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800"
+              className="flex h-12 items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-2xl shadow-sm transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-800/70"
             >
-              {chosenEmoji}
+              <span>{chosenEmoji}</span>
+              <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
             </button>
           </div>
 
           {/* Container Kosong Tempat Picker Akan Disuntikkan */}
-          <div 
+          <div
             className={`absolute z-50 mt-2 shadow-xl border rounded-lg overflow-hidden ${showPicker ? 'block' : 'hidden'}`}
             ref={pickerContainerRef}
           ></div>
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="name">
+          <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="name">
+            <Tag className="h-3.5 w-3.5 text-zinc-400" />
             Nama Kategori
           </label>
           <input
@@ -112,19 +118,20 @@ export default function CategoryForm() {
             type="text"
             required
             placeholder="Contoh: Uang Jajan, Bonus Proyek"
-            className="flex h-10 w-full rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 dark:border-zinc-800"
+            className="flex h-10 w-full rounded-md border border-zinc-200 bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:border-zinc-400 dark:border-zinc-800 dark:focus-visible:ring-zinc-600/50"
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="type">
+          <label className="flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="type">
+            <ArrowLeftRight className="h-3.5 w-3.5 text-zinc-400" />
             Tipe Aliran Dana
           </label>
           <select
             id="type"
             name="type"
             required
-            className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 dark:border-zinc-800 dark:bg-zinc-900"
+            className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 focus-visible:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:focus-visible:ring-zinc-600/50"
           >
             <option value="expense">Pengeluaran (Expense)</option>
             <option value="income">Pemasukan (Income)</option>
@@ -134,8 +141,9 @@ export default function CategoryForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full inline-flex h-10 items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 shadow hover:bg-zinc-900/90 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
+          className="w-full inline-flex h-10 items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50 shadow transition-colors hover:bg-zinc-900/90 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900"
         >
+          <Save className="h-4 w-4" />
           {loading ? 'Menyimpan...' : 'Simpan Kategori'}
         </button>
       </form>

@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import CategoryForm from './categories'
 import DeleteCategoryButton from './delete-button'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 
 export default async function CategoriesPage() {
   const supabase = await createClient()
@@ -35,8 +36,14 @@ export default async function CategoriesPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Kelompok Pemasukan */}
           <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <h3 className="text-lg font-semibold mb-4 text-emerald-600 dark:text-emerald-400">
-              Kategori Pemasukan ({incomeCategories.length})
+            <h3 className="flex items-center gap-2 text-lg font-semibold mb-4 text-zinc-900 dark:text-zinc-50">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+                <TrendingUp className="h-4 w-4" />
+              </span>
+              <span>
+                Kategori Pemasukan{' '}
+                <span className="text-zinc-400 font-normal">({incomeCategories.length})</span>
+              </span>
             </h3>
             {incomeCategories.length === 0 ? (
               <p className="text-sm text-zinc-400">Belum ada kategori pemasukan buatanmu.</p>
@@ -57,8 +64,14 @@ export default async function CategoriesPage() {
 
           {/* Kelompok Pengeluaran */}
           <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <h3 className="text-lg font-semibold mb-4 text-red-600 dark:text-red-400">
-              Kategori Pengeluaran ({expenseCategories.length})
+            <h3 className="flex items-center gap-2 text-lg font-semibold mb-4 text-zinc-900 dark:text-zinc-50">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                <TrendingDown className="h-4 w-4" />
+              </span>
+              <span>
+                Kategori Pengeluaran{' '}
+                <span className="text-zinc-400 font-normal">({expenseCategories.length})</span>
+              </span>
             </h3>
             {expenseCategories.length === 0 ? (
               <p className="text-sm text-zinc-400">Belum ada kategori pengeluaran buatanmu.</p>
