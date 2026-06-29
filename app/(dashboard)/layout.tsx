@@ -92,7 +92,7 @@ export default async function DashboardLayout({
             <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 truncate">
               {fullName}
             </span>
-            <span className="text-xs text-zinc-400 truncate">Pelacak Keuangan</span>
+            <span className="text-xs text-zinc-400 truncate">Money Tracker</span>
           </div>
         </div>
 

@@ -17,7 +17,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900">
                 <Wallet className="h-4.5 w-4.5" />
               </div>
-              <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Pelacak Keuangan</span>
+              <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">Arus</span>
             </div>
             <h2 className="text-2xl font-semibold leading-snug tracking-tight text-zinc-900 dark:text-zinc-50">
               Catat setiap rupiah, kenali setiap kebiasaan.
