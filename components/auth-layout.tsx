@@ -42,7 +42,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
               className="mb-8 flex items-center gap-2.5"
             >
               <Image
-                src="/arus.png"
+                src="/A.png"
                 alt="Arus Logo"
                 width={36}
                 height={36}

@@ -11,6 +11,7 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react'
+import Footer from '@/components/footer'
 
 export default async function DashboardLayout({
   children,
@@ -151,9 +152,18 @@ export default async function DashboardLayout({
       </aside>
 
       {/* KONTEN UTAMA */}
-      <main className="ml-64 flex-1 p-8">
-        {children}
-      </main>
+      {/* Kita ganti <main> menjadi <div class="flex flex-col ..."> */}
+      <div className="ml-64 flex-1 flex flex-col min-h-screen">
+        
+        {/* Main content: flex-grow akan mendorong footer ke bawah */}
+        <main className="flex-grow p-8">
+          {children}
+        </main>
+
+        {/* Footer sekarang berada di dalam wrapper kanan, 
+            sehingga otomatis berhenti tepat di batas sidebar */}
+        <Footer />
+      </div>
     </div>
   )
 }
