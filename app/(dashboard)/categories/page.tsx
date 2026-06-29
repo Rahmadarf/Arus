@@ -43,12 +43,11 @@ export default async function CategoriesPage() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 {incomeCategories.map((category) => (
-                  <div key={category.id} className="flex items-center justify-between rounded-lg border p-3 dark:border-zinc-800">
-                    <div className="flex items-center space-x-3 truncate mr-2">
+                  <div key={category.id} className="flex items-center justify-between rounded-lg border p-3 dark:border-zinc-800 gap-2">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
                       <span className="text-xl flex-shrink-0">{category.emoji}</span>
                       <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate">{category.name}</span>
                     </div>
-                    {/* Sisipkan Tombol Hapus di Sini */}
                     <DeleteCategoryButton id={category.id} />
                   </div>
                 ))}
@@ -66,12 +65,11 @@ export default async function CategoriesPage() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 {expenseCategories.map((category) => (
-                  <div key={category.id} className="flex items-center justify-between rounded-lg border p-3 dark:border-zinc-800">
-                    <div className="flex items-center space-x-3 truncate mr-2">
+                  <div key={category.id} className="flex items-center justify-between rounded-lg border p-3 dark:border-zinc-800 gap-2">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
                       <span className="text-xl flex-shrink-0">{category.emoji}</span>
                       <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50 truncate">{category.name}</span>
                     </div>
-                    {/* Sisipkan Tombol Hapus di Sini */}
                     <DeleteCategoryButton id={category.id} />
                   </div>
                 ))}

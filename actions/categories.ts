@@ -48,26 +48,36 @@ export async function deleteCategory(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { error: 'Sesi habis, silakan login kembali.' }
+  if (!user) return { error: 'Sesi habis, silakan login kembali.' }
+
+  // 1. INSPEKSI RELASI: Hitung apakah ada transaksi yang memakai ID kategori ini
+  const { count, error: countError } = await supabase
+    .from('transactions')
+    .select('*', { count: 'exact', head: true }) // head: true menghemat bandwidth karena hanya meminta jumlah (count), bukan isi datanya
+    .eq('category_id', id)
+    .eq('user_id', user.id)
+
+  if (countError) return { error: countError.message }
+
+  // 2. BLOKIR JIKA DIGUNAKAN
+  if (count && count > 0) {
+    return { 
+      error: `Gagal. Kategori ini tidak bisa dihapus karena masih digunakan pada ${count} riwayat transaksi.` 
+    }
   }
 
+  // 3. EKSEKUSI HAPUS JIKA AMAN
   const { error } = await supabase
     .from('categories')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id) // Proteksi mutlak: memastikan user hanya bisa menghapus kategori miliknya sendiri
+    .eq('user_id', user.id)
 
-  if (error) {
-    // Kode eror '23503' adalah standar PostgreSQL untuk Foreign Key Violation (RESTRICT)
-    if (error.code === '23503') {
-      return { 
-        error: 'Kategori gagal dihapus. Kategori ini masih digunakan oleh beberapa data transaksi. Hapus atau pindahkan transaksi tersebut terlebih dahulu.' 
-      }
-    }
-    return { error: error.message }
-  }
+  if (error) return { error: error.message }
 
   revalidatePath('/categories')
+  // Wajib revalidate halaman transaksi juga jika kamu menampilkan daftar kategori di sana
+  revalidatePath('/income') 
+  revalidatePath('/expense')
   return { success: true }
 }
