@@ -22,7 +22,7 @@ export default async function ExpensePage({ searchParams }: PageProps) {
   const { data: history } = await supabase
     .from('transactions')
     .select(`id, description, amount, transaction_date, created_at, category_id, categories (name, emoji)`)
-    .eq('type', 'expensd')
+    .eq('type', 'expense')
     .order('created_at', { ascending: false }) // WAJIB GANTI order ke created_at
     .limit(10)
 

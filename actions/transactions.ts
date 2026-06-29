@@ -95,23 +95,27 @@ export async function deleteTransaction(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    return { error: 'Sesi habis, silakan login kembali.' }
-  }
+  if (!user) return { error: 'Sesi habis, silakan login kembali.' }
 
+  // 1. MUTASI: Wajib di-await hingga tuntas 100%
   const { error } = await supabase
     .from('transactions')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id) // Memastikan isolasi data aman
+    .eq('user_id', user.id) // Validasi keamanan ekstra: pastikan user hanya menghapus miliknya
 
+  // 2. VALIDASI: Jika database gagal, hentikan eksekusi. Jangan sentuh cache.
   if (error) {
+    console.error('Delete Error:', error.message)
     return { error: error.message }
   }
 
+  // 3. INVALIDASI: Hanya dieksekusi JIKA DAN HANYA JIKA mutasi di atas sukses.
+  // Ini akan memaksa Next.js membuang cache lama dan menarik data segar dari Supabase.
   revalidatePath('/')
   revalidatePath('/income')
   revalidatePath('/expense')
+  
   return { success: true }
 }
 

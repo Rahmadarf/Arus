@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import ChartsWrapper from './charts-wrapper'
+import ChartsWrapper from './chart-wrapper'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
