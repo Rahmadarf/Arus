@@ -100,11 +100,14 @@ export default function TransactionForm({ type, categories, initialData }: Trans
         : await createTransaction(formData)
 
       if (result?.error) {
+        setIsSubmitting(false)
         throw new Error(result.error)
       }
 
       formRef.current?.reset()
       setIsSubmitting(false)
+      setRawAmount('')
+      setDisplayAmount('')
       return result
     }
 

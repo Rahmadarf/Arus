@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Footer from '@/components/footer'
 import NavigationShell from '@/components/navigation-shell' // <--- IMPORT KOMPONEN KLIEN
+import { Analytics } from "@vercel/analytics/next"
 
 export default async function DashboardLayout({
   children,
@@ -52,6 +53,7 @@ export default async function DashboardLayout({
   // 4. Bungkus Konten dengan Shell Navigasi
   return (
     <NavigationShell userProfile={userProfile} finances={finances}>
+      <Analytics />
       {children}
       <Footer />
     </NavigationShell>
