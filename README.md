@@ -1,6 +1,6 @@
-# Arus - Personal Finance Tracker
+# Arus: High-Performance Financial Management System
 
-Arus adalah aplikasi pelacak keuangan personal yang dibangun dengan arsitektur modern untuk efisiensi, kecepatan, dan ketajaman visual. Aplikasi ini membantu pengguna mencatat pemasukan dan pengeluaran secara terstruktur dengan visualisasi data yang intuitif.
+Arus adalah aplikasi manajemen finansial yang dibangun dengan fokus pada integritas data, keamanan, dan skalabilitas. Berbeda dengan aplikasi serupa yang mengandalkan kalkulasi sisi klien, FinStream mengadopsi arsitektur database-driven di mana seluruh logika saldo dan transaksi dikelola langsung di level PostgreSQL.Fitur Arsitektural Utama:Zero-Latency Balance Calculation: Menggunakan PostgreSQL Database Triggers untuk pembaruan saldo otomatis secara instan. Perhitungan beban komputasi dipindahkan dari aplikasi ke database, memastikan performa tetap konstan $O(1)$ meski data transaksi mencapai jutaan baris.Strict Financial Integrity: Implementasi Check Constraints pada level database untuk memastikan saldo tidak pernah bernilai negatif, menjamin ketahanan sistem dari race condition.Security-First Design: Proteksi penuh menggunakan Middleware untuk autentikasi rute, serta implementasi Row Level Security (RLS) untuk menjamin isolasi data antar pengguna secara mutlak.Type-Safe & Scalable: Dibangun menggunakan Next.js (App Router), TypeScript, dan Supabase untuk alur kerja pengembangan yang efisien dengan pemisahan Client dan Server Components yang ketat.
 
 ## 🚀 Fitur Utama
 - **Real-time Finance Tracking**: Catat transaksi dengan mudah menggunakan antarmuka yang responsif.
