@@ -33,69 +33,130 @@ const transactionSchema = z.object({
 
 export async function createTransaction(formData: FormData) {
   const supabase = await createClient()
+
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Akses ditolak. Sesi tidak valid.' }
 
-  if (!user) return { error: 'Sesi habis, silakan login kembali.' }
+  // 1. Ekstraksi Data Kasar
+  const rawAmount = formData.get('amount')
+  const type = formData.get('type') as string
+  const categoryId = formData.get('category_id') as string
+  const description = formData.get('description') as string
+  const date = formData.get('transaction_date') as string
 
-  // 2. Eksekusi Validasi Zod (safeParse tidak melempar error yang membuat server crash)
-  const validatedFields = transactionSchema.safeParse({
-    description: formData.get('description'),
-    amount: formData.get('amount'),
-    transaction_date: formData.get('transaction_date'),
-    category_id: formData.get('category_id'),
-    type: formData.get('type'),
-  })
+  const amount = Number(rawAmount)
 
-  // 3. Tangkap dan lemparkan pesan eror validasi ke UI
-  if (!validatedFields.success) {
-    return { error: validatedFields.error.issues[0].message }
+  // 2. Validasi Tipe Data & Integritas Dasar
+  if (amount <= 0) return { error: 'Nominal transaksi harus lebih dari 0.' }
+  if (type !== 'income' && type !== 'expense') return { error: 'Tipe transaksi tidak valid.' }
+  if (!categoryId || !description || !date) return { error: 'Semua kolom wajib diisi.' }
+
+  // 3. Validasi Kepemilikan Kategori (Mencegah Bypass API)
+  const { data: category, error: catError } = await supabase
+    .from('categories')
+    .select('id')
+    .eq('id', categoryId)
+    .or(`user_id.eq.${user.id}`) 
+    .single()
+
+  if (catError || !category) return { error: 'Kategori tidak valid atau tidak ditemukan.' }
+
+  // 4. Validasi Logika Bisnis (Skenario Strict Cash)
+  if (type === 'expense') {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('effective_balance')
+      .eq('id', user.id)
+      .single()
+
+    const currentBalance = profile?.effective_balance || 0
+    if (amount > currentBalance) {
+      return { 
+        error: `Saldo tidak mencukupi. Sisa saldo efektif: Rp ${currentBalance.toLocaleString('id-ID')}` 
+      }
+    }
   }
 
-  // 4. Gunakan data yang sudah divalidasi dan di-parsing (validatedFields.data)
-  const { error } = await supabase.from('transactions').insert([
-    {
+  // 5. Eksekusi ke Database (Aman dari korupsi data)
+  const { error: insertError } = await supabase
+    .from('transactions')
+    .insert({
       user_id: user.id,
-      ...validatedFields.data,
-    },
-  ])
+      amount,
+      type,
+      category_id: categoryId,
+      description,
+      transaction_date: date,
+    })
 
-  if (error) return { error: error.message }
+  if (insertError) return { error: 'Gagal mencatat transaksi ke sistem.' }
 
   revalidatePath('/')
   revalidatePath('/income')
   revalidatePath('/expense')
+  
   return { success: true }
 }
 
-export async function updateTransaction(id: string, formData: FormData) {
+export async function updateTransaction(formData: FormData) {
   const supabase = await createClient()
+
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Akses ditolak. Sesi tidak valid.' }
 
-  if (!user) return { error: 'Sesi habis, silakan login kembali.' }
+  // 1. Ambil ID Transaksi yang akan diedit
+  const id = formData.get('id') as string
+  if (!id) return { error: 'ID transaksi tidak ditemukan.' }
 
-  const validatedFields = transactionSchema.safeParse({
-    description: formData.get('description'),
-    amount: formData.get('amount'),
-    transaction_date: formData.get('transaction_date'),
-    category_id: formData.get('category_id'),
-    type: formData.get('type'), // Pastikan form edit juga mengirimkan type
-  })
+  const amount = Number(formData.get('amount'))
+  const type = formData.get('type') as string
+  const categoryId = formData.get('category_id') as string
+  const description = formData.get('description') as string
+  const date = formData.get('transaction_date') as string
 
-  if (!validatedFields.success) {
-    return { error: validatedFields.error.issues[0].message }
+  // 2. Validasi kelayakan data
+  if (amount <= 0) return { error: 'Nominal harus lebih dari 0.' }
+  if (!categoryId || !description || !date) return { error: 'Semua kolom wajib diisi.' }
+
+  // 3. Validasi Batas Saldo Spesifik untuk Operasi Edit (Strict Cash)
+  if (type === 'expense') {
+    const [
+      { data: currentTx },
+      { data: profile }
+    ] = await Promise.all([
+      supabase.from('transactions').select('amount').eq('id', id).single(),
+      supabase.from('profiles').select('effective_balance').eq('id', user.id).single()
+    ])
+
+    const oldAmount = currentTx?.amount || 0
+    const currentBalance = profile?.effective_balance || 0
+    
+    // Hitung delta: jika nominal pengeluaran baru lebih besar dari yang lama,
+    // pastikan selisihnya tidak melebihi saldo yang tersedia saat ini.
+    if ((amount - oldAmount) > currentBalance) {
+      return { error: 'Saldo tidak mencukupi untuk mengubah nominal pengeluaran ini.' }
+    }
   }
 
-  const { error } = await supabase
+  // 4. EKSEKUSI UPDATE, BUKAN INSERT
+  const { error: updateError } = await supabase
     .from('transactions')
-    .update({ ...validatedFields.data })
-    .eq('id', id)
-    .eq('user_id', user.id)
+    .update({
+      amount,
+      category_id: categoryId,
+      description,
+      transaction_date: date,
+    })
+    .eq('id', id)           // <--- PASTIKAN MENGUNCI ID YANG TEPAT
+    .eq('user_id', user.id) // <--- PROTEKSI RLS: Hanya pemilik yang bisa edit
 
-  if (error) return { error: error.message }
+  if (updateError) return { error: 'Gagal memperbarui data transaksi.' }
 
+  // 5. Bersihkan cache halaman agar visual langsung berganti
   revalidatePath('/')
   revalidatePath('/income')
   revalidatePath('/expense')
+
   return { success: true }
 }
 

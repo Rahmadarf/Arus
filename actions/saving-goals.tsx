@@ -51,10 +51,14 @@ export async function addFundsToGoal(goalId: string, amount: number, goalName: s
     if (!user) return { error: 'Unauthorized' }
 
     // 1. Ambil SEMUA transaksi user yang relevan
-    const { data: transactions, error: txFetchError } = await supabase
-        .from('transactions')
-        .select('amount, type, saving_goal_id')
-        .eq('user_id', user.id) // Perbaiki filter: pakai user_id
+
+    const [
+        { data: transactions, error: txFetchError },
+        { data: profile }
+    ] = await Promise.all([
+        supabase.from('transactions').select('amount, type, saving_goal_id').eq('user_id', user.id),
+        supabase.from('profiles').select('effective_balance').eq('id', user.id).single()
+    ])
 
     if (txFetchError) return { error: 'Gagal mengambil data transaksi.' }
 
@@ -74,7 +78,7 @@ export async function addFundsToGoal(goalId: string, amount: number, goalName: s
         }
     })
 
-    const effectiveBalance = totalIncome - (totalExpense + savedAmount)
+    const effectiveBalance = profile?.effective_balance
 
     // 3. Validasi Dana
     if (amount > effectiveBalance) {

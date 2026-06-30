@@ -10,7 +10,7 @@ export default async function GoalsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Unauthorized' }
 
-    const [{ data: goals }, { data: transactions }] = await Promise.all([
+    const [{ data: goals }, { data: transactions }, { data: profile }] = await Promise.all([
         supabase
             .from('saving_goals')
             .select('*')
@@ -18,7 +18,12 @@ export default async function GoalsPage() {
         supabase
             .from('transactions')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', user.id),
+        supabase
+            .from('profiles')
+            .select('effective_balance')
+            .eq('id', user.id)
+            .single()
     ])
 
     // --- AGREGASI DATA PERIODE SAAT INI ---
@@ -37,8 +42,7 @@ export default async function GoalsPage() {
             }
         })
 
-    const totalOutflow = totalExpense + savedAmount
-    const effectiveBalance = totalIncome - totalOutflow
+    const effectiveBalance = profile?.effective_balance
 
     const hasGoals = goals && goals.length > 0
     const formatMoney = (amount: number) => `Rp ${amount.toLocaleString('id-ID')}`

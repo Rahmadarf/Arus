@@ -68,48 +68,54 @@ export default function TransactionForm({ type, categories, initialData }: Trans
     }
   }, [initialData, isEditMode])
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const form = event.currentTarget
     setIsSubmitting(true)
 
-    const form = event.currentTarget
-    const formData = new FormData(form)
+    if (!form.checkValidity()) {
+      form.reportValidity()
+      return
+    }
 
-    // PERBAIKAN: Taruh di sini agar CREATE maupun UPDATE selalu membawa data type
+    const formData = new FormData(form)
     formData.append('type', type)
 
+    // JIKA MODE EDIT, SUNTIKKAN ID TRANSAKSI KE FORMDATA
+    if (isEditMode) {
+      formData.append('id', initialData.id)
+    }
+
+    const amount = Number(formData.get('amount'))
+
+    if (amount <= 0) {
+      toast.error('Nominal tidak valid.')
+      return
+    }
+
     const action = async () => {
-      let result
-      if (isEditMode && initialData) {
-        // Sekarang formData di sini sudah memiliki properti 'type'
-        result = await updateTransaction(initialData.id, formData)
-      } else {
-        result = await createTransaction(formData)
-      }
+      // LOGIKA BERCABANG: Gunakan updateTransaction jika isEditMode, sebaliknya createTransaction
+      const result = isEditMode
+        ? await updateTransaction(formData)
+        : await createTransaction(formData)
 
       if (result?.error) {
-        setIsSubmitting(false)
         throw new Error(result.error)
       }
 
-      // Bersihkan state & UI
-      setDisplayAmount('')
-      setRawAmount('')
+      formRef.current?.reset()
       setIsSubmitting(false)
-
-      if (!isEditMode) {
-        form.reset()
-      } else {
-        router.push(`/${type}`)
-      }
-
       return result
     }
 
+    const actionName = type === 'income' ? 'pemasukan' : 'pengeluaran'
+    const processName = isEditMode ? 'Memperbarui' : 'Mencatat'
+    const successName = isEditMode ? 'diperbarui' : 'dicatat'
+
     toast.promise(action(), {
-      loading: isEditMode ? 'Memperbarui transaksi...' : 'Menyimpan transaksi...',
-      success: isEditMode ? 'Transaksi diperbarui.' : 'Transaksi disimpan.',
-      error: (err) => err.message || 'Gagal memproses transaksi.'
+      loading: `${processName} ${actionName}...`,
+      success: `Data ${actionName} berhasil ${successName}!`,
+      error: (err) => err.message
     })
   }
 

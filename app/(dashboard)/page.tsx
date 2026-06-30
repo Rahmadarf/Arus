@@ -24,11 +24,15 @@ export default async function DashboardPage() {
   date120DaysAgo.setDate(today.getDate() - 120)
   const string120DaysAgo = date120DaysAgo.toISOString().split('T')[0]
 
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
   // 3. PENGAMBILAN DATA PARALEL (Menghilangkan Waterfall Fetching)
   const [
     { data: recentTransactions },
     { data: transactions },
-    { data: previousPeriodTransactions }
+    { data: previousPeriodTransactions },
+    { data: profile }
   ] = await Promise.all([
     getRecentTransactions(5),
     supabase
@@ -40,7 +44,12 @@ export default async function DashboardPage() {
       .from('transactions')
       .select('amount, type, saving_goal_id')
       .gte('transaction_date', string120DaysAgo)
-      .lt('transaction_date', string60DaysAgo)
+      .lt('transaction_date', string60DaysAgo),
+    supabase
+      .from('profiles')
+      .select('effective_balance')
+      .eq('id', user.id)
+      .single()
   ])
 
   const txList = transactions || []
@@ -81,13 +90,11 @@ export default async function DashboardPage() {
     { name: 'Ditabung', value: savedAmount },
   ]
 
-  const totalOutflow = totalExpense + savedAmount
-  const effectiveBalance = totalIncome - totalOutflow
   const summary = {
     totalIncome,
     totalExpense, 
     savedAmount,
-    balance: totalIncome - totalOutflow 
+    balance: profile?.effective_balance
   }
 
   const calcChange = (current: number, previous: number) => {
