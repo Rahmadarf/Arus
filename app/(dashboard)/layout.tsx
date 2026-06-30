@@ -10,6 +10,7 @@ import {
   LogOut,
   ArrowUp,
   ArrowDown,
+  Goal
 } from 'lucide-react'
 import Footer from '@/components/footer'
 
@@ -38,18 +39,29 @@ export default async function DashboardLayout({
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
   const stringFirstDay = firstDayOfMonth.toISOString().split('T')[0]
 
+  // 1. Ubah Query untuk mengambil saving_goal_id
   const { data: monthTransactions } = await supabase
     .from('transactions')
-    .select('amount, type')
+    .select('amount, type, saving_goal_id') // WAJIB tambahkan saving_goal_id
     .gte('transaction_date', stringFirstDay)
 
   let monthIncome = 0
   let monthExpense = 0
+  
+  // 2. Perbarui logika agregasi agar selaras dengan dasbor utama
   ;(monthTransactions || []).forEach((tx) => {
     const amount = Number(tx.amount)
-    if (tx.type === 'income') monthIncome += amount
-    else if (tx.type === 'expense') monthExpense += amount
+    
+    // Kita hanya menghitung arus kas "Riil" (Bukan internal tabungan)
+    if (tx.type === 'income') {
+      // Jika itu pemasukan riil (bukan pencairan tabungan), hitung sebagai income
+      if (!tx.saving_goal_id) monthIncome += amount
+    } else if (tx.type === 'expense') {
+      // Jika itu konsumsi riil (bukan menabung), hitung sebagai expense
+      if (!tx.saving_goal_id) monthExpense += amount
+    }
   })
+  
   const monthBalance = monthIncome - monthExpense
 
   // Format ringkas untuk angka di sidebar (cth: 4.2jt, 850rb)
@@ -78,6 +90,7 @@ export default async function DashboardLayout({
     { href: '/income', label: 'Income', icon: ArrowUpCircle },
     { href: '/expense', label: 'Expense', icon: ArrowDownCircle },
     { href: '/categories', label: 'Kelola Kategori', icon: Tag },
+    { href: '/goals', label: 'Goals', icon: Goal}
   ]
 
   return (
@@ -117,7 +130,7 @@ export default async function DashboardLayout({
           className="mt-5 block rounded-xl bg-zinc-50 p-3.5 transition-colors hover:bg-zinc-100 dark:bg-zinc-800/60 dark:hover:bg-zinc-800"
         >
           <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-400">
-            Saldo Bulan Ini
+            Saldo Bulan Ini (Tanpa Tabungan)
           </p>
           <p className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-50">
             Rp {monthBalance.toLocaleString('id-ID')}

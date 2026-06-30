@@ -5,6 +5,7 @@ import { createCategory } from '@/actions/categories'
 import data from '@emoji-mart/data'
 import { Picker } from 'emoji-mart'
 import { Smile, Tag, ArrowLeftRight, Save, ChevronDown } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function CategoryForm() {
   const [error, setError] = useState<string | null>(null)
@@ -52,23 +53,37 @@ export default function CategoryForm() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setError(null)
-    setLoading(true)
 
-    const formData = new FormData(event.currentTarget)
+    const form = event.currentTarget
+    const formData = new FormData(form)
+    
     // Sisipkan emoji murni ke form data
     formData.append('emoji', chosenEmoji)
 
-    const result = await createCategory(formData)
+    const action = async () => {
+      // Hanya panggil database SATU KALI
+      setLoading(true)
+      const result = await createCategory(formData)
 
-    if (result?.error) {
-      setError(result.error)
-      setLoading(false)
-    } else {
-      setLoading(false)
+      // 1. Tangani error
+      if (result?.error) {
+        throw new Error(result.error)
+      }
+
+      // 2. Bersihkan form & state HANYA JIKA SUKSES
       setChosenEmoji('💰') // Reset emoji ke default
-      formRef.current?.reset()
+      form.reset()         // Bersihkan input teks
+      setLoading(false)
+
+      return result
     }
+
+    // 3. Serahkan seluruh kendali UI/UX ke Sonner
+    toast.promise(action(), {
+      loading: 'Menyimpan kategori...',
+      success: 'Kategori berhasil disimpan!',
+      error: (err) => err.message || 'Gagal menyimpan kategori.'
+    })
   }
 
   return (

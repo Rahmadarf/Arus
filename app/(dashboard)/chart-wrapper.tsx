@@ -5,9 +5,9 @@ import dynamic from 'next/dynamic'
 // Definisikan tipe props agar TypeScript tidak mengeluh
 interface DashboardChartsProps {
   donutData: { name: string; value: number }[]
-  lineData: { date: string; income: number; expense: number }[]
-  summary: { totalIncome: number; totalExpense: number; balance: number }
-  trend: { incomeChange: number; expenseChange: number }
+  lineData: { date: string; income: number; expense: number; savings: number }[]
+  summary: { totalIncome: number; totalExpense: number; savedAmount: number; balance: number; }
+  trend: { incomeChange: number; expenseChange: number, savingsChange: number }
 }
 
 // Eksekusi dynamic import secara sah di dalam area Klien

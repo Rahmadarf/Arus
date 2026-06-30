@@ -133,7 +133,7 @@ export async function deleteTransaction(id: string) {
 
 
 export async function fetchMoreTransactions(
-  type: 'income' | 'expense',
+  type: 'income' | 'expense' | 'transfer',
   lastCursor?: string,
   filters?: TransactionFilters // Parameter opsional baru
 ) {

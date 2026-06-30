@@ -7,13 +7,13 @@ import {
 import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 
 interface DashboardChartsProps {
-    donutData: { name: string; value: number }[]
-    lineData: { date: string; income: number; expense: number }[]
-    summary: { totalIncome: number; totalExpense: number; balance: number }
-    trend: { incomeChange: number; expenseChange: number }
+  donutData: { name: string; value: number }[]
+  lineData: { date: string; income: number; expense: number; savings: number }[]
+  summary: { totalIncome: number; totalExpense: number; savedAmount: number; balance: number; }
+  trend: { incomeChange: number; expenseChange: number, savingsChange: number }
 }
 
-const COLORS = ['#10B981', '#EF4444'] // Emerald untuk Income, Red untuk Expense
+const COLORS = ['#10B981', '#EF4444', '#7C3AED'] // Emerald untuk Income, Red untuk Expense
 
 // Tooltip kustom untuk Donut Chart
 function DonutTooltip({ active, payload }: any) {
@@ -88,7 +88,7 @@ export default function DashboardCharts({ donutData, lineData, summary, trend }:
                     <div className="flex items-start justify-between">
                         <div>
                             <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                                Total Pengeluaran (60 Hari)
+                                Total Konsumsi (60 Hari)
                             </p>
                             <p className="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">
                                 Rp {summary.totalExpense.toLocaleString('id-ID')}
@@ -169,7 +169,7 @@ export default function DashboardCharts({ donutData, lineData, summary, trend }:
                                         {donutData.map((entry, index) => (
                                             <Cell
                                                 key={`cell-${index}`}
-                                                fill={index === 0 ? 'url(#gradIncome)' : 'url(#gradExpense)'}
+                                                fill={COLORS[index % COLORS.length]}
                                                 stroke="transparent"
                                             />
                                         ))}
@@ -211,7 +211,7 @@ export default function DashboardCharts({ donutData, lineData, summary, trend }:
                                     type="monotone"
                                     dataKey="income"
                                     name="Pemasukan"
-                                    stroke="url(#lineIncome)"
+                                    stroke="#10B981"
                                     strokeWidth={2.5}
                                     dot={false}
                                     activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
@@ -222,12 +222,19 @@ export default function DashboardCharts({ donutData, lineData, summary, trend }:
                                     type="monotone"
                                     dataKey="expense"
                                     name="Pengeluaran"
-                                    stroke="url(#lineExpense)"
+                                    stroke="#EF4444"
                                     strokeWidth={2.5}
                                     dot={false}
                                     activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
                                     animationDuration={900}
                                     animationEasing="ease-out"
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="savings"
+                                    stroke="#7C3AED"
+                                    strokeWidth={2}
+                                    name="Tabungan"
                                 />
                                 <Legend verticalAlign="bottom" height={36} iconType="circle" />
                             </LineChart>

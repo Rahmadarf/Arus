@@ -61,9 +61,7 @@ export async function deleteCategory(id: string) {
 
   // 2. BLOKIR JIKA DIGUNAKAN
   if (count && count > 0) {
-    return { 
-      error: `Gagal. Kategori ini tidak bisa dihapus karena masih digunakan pada ${count} riwayat transaksi.` 
-    }
+    throw new Error(`Gagal. Kategori ini tidak bisa dihapus karena masih digunakan pada ${count} riwayat transaksi.`)
   }
 
   // 3. EKSEKUSI HAPUS JIKA AMAN
@@ -73,7 +71,7 @@ export async function deleteCategory(id: string) {
     .eq('id', id)
     .eq('user_id', user.id)
 
-  if (error) return { error: error.message }
+  if (error) throw new Error('Gagal menghapus kategori.')
 
   revalidatePath('/categories')
   // Wajib revalidate halaman transaksi juga jika kamu menampilkan daftar kategori di sana
