@@ -25,7 +25,9 @@ export default async function DashboardPage() {
   const string120DaysAgo = date120DaysAgo.toISOString().split('T')[0]
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
+  if (!user) {
+    throw new Error('Unauthorized')
+  }
 
   // 3. PENGAMBILAN DATA PARALEL (Menghilangkan Waterfall Fetching)
   const [

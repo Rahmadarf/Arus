@@ -12,7 +12,9 @@ export default async function DashboardLayout({
 
   // 1. Ambil data user
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
+  if (!user) {
+    throw new Error('Unauthorized')
+  }
 
   // 2. Ambil Profil & Transaksi (Gunakan Promise.all agar efisien)
   const today = new Date()

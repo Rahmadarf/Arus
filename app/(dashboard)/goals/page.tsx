@@ -8,7 +8,9 @@ export default async function GoalsPage() {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Unauthorized' }
+    if (!user) {
+        throw new Error('Unauthorized')
+    }
 
     const [{ data: goals }, { data: transactions }, { data: profile }] = await Promise.all([
         supabase
