@@ -1,0 +1,22 @@
+[2026-07-28T04:01:28.492Z] [INFO] AI workers disabled (default) - all workers run local-only. Enable with `daemon start --headless`, daemon.aiWorkers.enabled=true, or RUFLO_DAEMON_AI_WORKERS=1 (#2661)
+[2026-07-28T04:01:28.494Z] [INFO] Scheduled map (interval: 900s, first run in 0s)
+[2026-07-28T04:01:28.494Z] [INFO] Scheduled audit (interval: 600s, first run in 120s)
+[2026-07-28T04:01:28.495Z] [INFO] Scheduled optimize (interval: 900s, first run in 240s)
+[2026-07-28T04:01:28.495Z] [INFO] Scheduled consolidate (interval: 1800s, first run in 360s)
+[2026-07-28T04:01:28.495Z] [INFO] Scheduled testgaps (interval: 1200s, first run in 480s)
+[2026-07-28T04:01:28.495Z] [INFO] Scheduled backup (interval: 86400s, first run in 600s)
+[2026-07-28T04:01:28.496Z] [INFO] Scheduled harness (interval: 21600s, first run in 720s)
+[2026-07-28T04:01:28.496Z] [INFO] Lifecycle monitor active (workspace-removal, ttl=43200s)
+[2026-07-28T04:01:28.498Z] [INFO] Daemon started (PID: 25472, CPUs: 16, workers: 7, maxCpuLoad: 12.8, minFreeMemoryPercent: 10%)
+[2026-07-28T04:01:28.498Z] [INFO] Worker map deferred: Memory too low: 8.2% free
+[2026-07-28T04:03:28.502Z] [INFO] Starting worker: audit (1/2 concurrent)
+[2026-07-28T04:03:28.505Z] [INFO] Worker audit completed in 7ms
+[2026-07-28T04:03:28.511Z] [INFO] Starting worker: map (1/2 concurrent)
+[2026-07-28T04:03:28.515Z] [INFO] Worker map completed in 6ms
+[2026-07-28T04:05:28.498Z] [INFO] Starting worker: optimize (1/2 concurrent)
+[2026-07-28T04:05:28.500Z] [INFO] Worker optimize completed in 3ms
+[2026-07-28T04:07:28.509Z] [INFO] Starting worker: consolidate (1/2 concurrent)
+[2026-07-28T04:07:28.510Z] [INFO] Consolidate worker: distillation skipped (no-db)
+[2026-07-28T04:07:28.510Z] [INFO] Worker consolidate completed in 2ms
+[2026-07-28T04:09:28.498Z] [INFO] Starting worker: testgaps (1/2 concurrent)
+[2026-07-28T04:09:28.500Z] [INFO] Worker testgaps completed in 4ms
