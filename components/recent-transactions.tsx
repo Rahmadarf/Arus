@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/table"; // Sesuaikan jika shadcn Anda ditaruh di components/ui/table
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { formatRupiah } from "@/lib/format";
 
 // 1. Definisikan Struktur Data Transaksi (Tipe TypeScript)
 type Transaction = {
@@ -46,15 +47,6 @@ const transactions: Transaction[] = [
         amount: 200000,
     },
 ];
-
-// Helper untuk format rupiah yang rapi
-const formatRupiah = (value: number) => {
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        minimumFractionDigits: 0,
-    }).format(value);
-};
 
 export function RecentTransactions() {
     return (

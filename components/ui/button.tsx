@@ -1,3 +1,8 @@
+"use client"
+
+// Radix `Slot` memakai React.createContext, yang tidak ada di React Server Component.
+// Tanpa "use client", Button gagal saat diimpor dari Server Component.
+
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
