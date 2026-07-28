@@ -25,7 +25,7 @@ export function OverviewChart() {
                 <CardDescription>Pemasukan vs Pengeluaran</CardDescription>
             </CardHeader>
             <CardContent>
-                <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <ChartContainer config={chartConfig} className="h-75 w-full">
                     <AreaChart data={chartData}>
                         <CartesianGrid vertical={false} />
                         <XAxis dataKey="month" tickLine={false} axisLine={false} />
