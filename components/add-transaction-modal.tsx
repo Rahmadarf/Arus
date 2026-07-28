@@ -29,7 +29,7 @@ export function AddTransactionModal() {
             {/* 1. TOMBOL PEMICU DI SIDEBAR */}
             <DialogTrigger asChild>
                 <Button className="w-full flex items-center justify-center gap-2 bg-zinc-950 text-white hover:bg-zinc-900 rounded-xl py-6 text-sm font-semibold shadow-md active:scale-[0.98] transition-all">
-                    <Plus className="w-4 h-4 stroke-[3]" />
+                    <Plus className="w-4 h-4 stroke-3" />
                     <span>Transaksi Baru</span>
                 </Button>
             </DialogTrigger>
