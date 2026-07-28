@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 // Import Components
 import Sidebar from "@/components/sidebar";
+import { MobileNav } from "@/components/mobile-nav";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -42,18 +43,24 @@ export default function RootLayout({
       {/* Gunakan font-sans di body agar font Inter menjadi default aplikasi */}
       <body className="h-full font-sans bg-zinc-50 text-zinc-900 antialiased">
 
-        {/* Pembungkus Utama Dashboard - Ditambahkan p-4 */}
-        <div className="flex h-screen overflow-hidden p-4 gap-4 bg-zinc-50">
+        {/* Pembungkus Utama Dashboard */}
+        <div className="flex h-screen overflow-hidden p-3 gap-3 md:p-4 md:gap-4 bg-zinc-50">
 
-          {/* 1. Kiri: Floating Sidebar */}
+          {/* 1. Kiri: Floating Sidebar (hanya lg ke atas) */}
           <Sidebar />
 
-          {/* 2. Kanan: Area Konten Utama dengan latar belakang putih agar kontras */}
-          <main className="flex-1 overflow-y-auto bg-white border border-zinc-200 rounded-2xl p-6 md:p-8">
-            <div className="max-w-7xl mx-auto w-full">
-              {children}
-            </div>
-          </main>
+          {/* 2. Kanan: Top bar mobile + area konten utama.
+                 min-w-0 wajib: tanpa itu anak flex menolak menyusut dan
+                 konten meluber keluar layar di ponsel. */}
+          <div className="flex flex-1 min-w-0 flex-col gap-3 md:gap-4">
+            <MobileNav />
+
+            <main className="flex-1 overflow-y-auto bg-white border border-zinc-200 rounded-2xl p-4 sm:p-6 md:p-8">
+              <div className="max-w-7xl mx-auto w-full">
+                {children}
+              </div>
+            </main>
+          </div>
 
         </div>
 

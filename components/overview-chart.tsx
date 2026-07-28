@@ -13,8 +13,8 @@ const chartData = [
 
 // Konfigurasi shadcn/ui
 const chartConfig = {
-    income: { label: "Pemasukan", color: "hsl(var(--chart-1))" },
-    expense: { label: "Pengeluaran", color: "hsl(var(--chart-2))" },
+    income: { label: "Pemasukan", color: "var(--chart-1)" },
+    expense: { label: "Pengeluaran", color: "var(--chart-2)" },
 } satisfies ChartConfig;
 
 export function OverviewChart() {
