@@ -4,10 +4,110 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  provider = "prisma-client-js" // Menggunakan provider resmi javascript/typescript
+  // Hapus baris 'output = ...' agar hasil generate tersimpan di tempat yang benar
 }
+
 
 datasource db {
   provider = "postgresql"
 }
+
+// ==========================================
+// 🔐 TABEL WAJIB BETTER AUTH
+// ==========================================
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // 🔗 Relasi Bisnis Aplikasi Arus
+  categories   Category[]    
+  transactions Transaction[] 
+  sessions     Session[]
+  accounts     Account[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  selectAccounts        String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+  
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Verification {
+  id         String    @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+}
+
+// ==========================================
+// 💰 TABEL BISNIS APLIKASI ARUS
+// ==========================================
+
+model Category {
+  id           String        @id @default(uuid())
+  name         String        
+  type         String        // "INCOME" atau "EXPENSE"
+  createdAt    DateTime      @default(now())
+  
+  // Relasi ke User Better Auth
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Relasi ke Transaksi
+  transactions Transaction[] 
+
+  @@unique([name, type, userId]) 
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  amount      Float
+  type        String   // "INCOME" atau "EXPENSE"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relasi ke User Better Auth
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relasi ke Category
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+

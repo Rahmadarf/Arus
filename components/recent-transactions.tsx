@@ -11,44 +11,24 @@ import { cn } from "@/lib/utils";
 import { formatRupiah } from "@/lib/format";
 
 // 1. Definisikan Struktur Data Transaksi (Tipe TypeScript)
-type Transaction = {
-    id: string;
-    date: string;
-    category: string;
-    description: string;
-    type: "INCOME" | "EXPENSE";
-    amount: number;
-};
+interface TransactionData {
+    id: string | null,
+    amount: number,
+    type: string,
+    category: {
+        id: string,
+        name: string,
+        type: string
+    },
+    description: string | null,
+    createdAt: Date
+}
 
-// 2. Data Latihan (Mock Data) untuk Tampilan Grafik & Tabel MVP
-const transactions: Transaction[] = [
-    {
-        id: "tx-1",
-        date: "24 Feb 2026",
-        category: "Gaji",
-        description: "Gaji Bulanan Utama",
-        type: "INCOME",
-        amount: 5000000,
-    },
-    {
-        id: "tx-2",
-        date: "23 Feb 2026",
-        category: "Makanan",
-        description: "Beli Kopi dan Cemilan Sore",
-        type: "EXPENSE",
-        amount: 75000,
-    },
-    {
-        id: "tx-3",
-        date: "22 Feb 2026",
-        category: "Transportasi",
-        description: "Isi Saldo E-Toll Bulanan",
-        type: "EXPENSE",
-        amount: 200000,
-    },
-];
+interface RecentTransactionsProps {
+    data: TransactionData[];
+}
 
-export function RecentTransactions() {
+export function RecentTransactions({ data }: RecentTransactionsProps) {
     return (
         <Card className="rounded-2xl border-zinc-200 shadow-sm w-full">
             <CardHeader>
@@ -67,15 +47,21 @@ export function RecentTransactions() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {transactions.map((tx) => (
+                            {data.map((tx) => (
                                 <TableRow key={tx.id} className="hover:bg-zinc-50/50 transition-colors">
-                                    <TableCell className="text-zinc-500 text-sm">{tx.date}</TableCell>
+                                    <TableCell className="text-zinc-500 text-sm">
+                                        {new Date(tx.createdAt).toLocaleDateString("id-ID", {
+                                            day: "numeric",
+                                            month: "short",
+                                            year: "numeric",
+                                        })}
+                                    </TableCell>
                                     <TableCell>
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800">
-                                            {tx.category}
+                                            {tx.category.name}
                                         </span>
                                     </TableCell>
-                                    <TableCell className="text-zinc-700 font-medium text-sm">{tx.description}</TableCell>
+                                    <TableCell className="text-zinc-700 font-medium text-sm">{tx.description || "Tanpa Catatan"}</TableCell>
                                     {/* 3. Logika Warna Dinamis: Hijau jika INCOME, Merah jika EXPENSE */}
                                     <TableCell className={cn(
                                         "text-right font-semibold text-sm",

@@ -32,7 +32,7 @@ export async function TransactionsTable(props: Props) {
 
   // Sumber data sementara. Saat backend siap, cukup ganti isi getTransactions()
   // di lib/transactions-mock.ts — komponen ini tidak perlu berubah.
-  const { rows: transactions, total, totalAll } = getTransactions(props);
+  const { rows: transactions, total, totalAll } = await getTransactions(props);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 

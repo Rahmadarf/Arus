@@ -1,8 +1,14 @@
 import BalanceCard from "@/components/balance-card"
 import { OverviewChart } from "@/components/overview-chart"
 import { RecentTransactions } from "@/components/recent-transactions";
+import { getTransactionByUserId } from "./actions/transaction";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+
+  const testingUserId = "id-user-testing-rahmad-123";
+
+  const dataTransactions = await getTransactionByUserId(testingUserId)
+  
   return (
     <div className="space-y-6">
       {/* Header Halaman */}
@@ -25,7 +31,7 @@ export default function DashboardPage() {
 
         {/* Bagian 3: Daftar Transaksi Terbaru */}
         <div className="w-full">
-          <RecentTransactions />
+          <RecentTransactions data={dataTransactions?.slice(0, 5) || []} />
         </div>
       </div>
 

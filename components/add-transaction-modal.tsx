@@ -13,15 +13,29 @@ import {
     Select, SelectContent, SelectItem,
     SelectTrigger, SelectValue
 } from "@/components/ui/select";
+import { createTransaction } from "@/app/actions/transaction";
 
 export function AddTransactionModal() {
     const [open, setOpen] = useState(false);
+    const [isPending, setIsPending] = useState(false); // UI Indikator Loading
 
-    // Fungsi penanganan submit sementara untuk MVP
-    const handleSubmit = (e: React.FormEvent) => {
+    // Perbaikan: Fungsi kirim data asli ke Backend Server Action
+    const handleClientAction = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        alert("Transaksi berhasil dicatat! (Fungsi MVP)");
-        setOpen(false); // Otomatis menutup modal setelah simpan
+        setIsPending(true);
+
+        const formData = new FormData(e.currentTarget);
+
+        // Memanggil fungsi backend bawaan Prisma Anda
+        const result = await createTransaction(formData);
+
+        setIsPending(false);
+
+        if (result?.success) {
+            setOpen(false); // Menutup modal otomatis jika berhasil simpan
+        } else {
+            alert(result?.error || "Terjadi kesalahan pada server database!");
+        }
     };
 
     return (
@@ -29,7 +43,7 @@ export function AddTransactionModal() {
             {/* 1. TOMBOL PEMICU DI SIDEBAR */}
             <DialogTrigger asChild>
                 <Button className="w-full flex items-center justify-center gap-2 bg-zinc-950 text-white hover:bg-zinc-900 rounded-xl py-6 text-sm font-semibold shadow-md active:scale-[0.98] transition-all">
-                    <Plus className="w-4 h-4 stroke-3" />
+                    <Plus className="w-4 h-4 stroke-[3]" />
                     <span>Transaksi Baru</span>
                 </Button>
             </DialogTrigger>
@@ -43,11 +57,14 @@ export function AddTransactionModal() {
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-5 mt-4">
+                {/* Perbaikan: onSubmit diganti ke fungsi backend */}
+                <form onSubmit={handleClientAction} className="space-y-5 mt-4">
+
                     {/* Input Tipe Transaksi */}
                     <div className="space-y-2">
                         <Label htmlFor="type" className="text-sm font-medium text-zinc-700">Tipe Arus Kas</Label>
-                        <Select required>
+                        {/* WAJIB: Tambahkan atribut name="type" agar terbaca oleh backend */}
+                        <Select name="type" required>
                             <SelectTrigger id="type" className="rounded-xl border-zinc-200">
                                 <SelectValue placeholder="Pilih tipe..." />
                             </SelectTrigger>
@@ -62,6 +79,7 @@ export function AddTransactionModal() {
                     <div className="space-y-2">
                         <Label htmlFor="amount" className="text-sm font-medium text-zinc-700">Nominal Uang (Rp)</Label>
                         <Input
+                            name="amount" // WAJIB: Ditambahkan atribut name
                             id="amount"
                             type="number"
                             placeholder="Contoh: 50000"
@@ -73,7 +91,8 @@ export function AddTransactionModal() {
                     {/* Input Kategori */}
                     <div className="space-y-2">
                         <Label htmlFor="category" className="text-sm font-medium text-zinc-700">Kategori</Label>
-                        <Select required>
+                        {/* WAJIB: Ditambahkan atribut name */}
+                        <Select name="category" required>
                             <SelectTrigger id="category" className="rounded-xl border-zinc-200">
                                 <SelectValue placeholder="Pilih kategori..." />
                             </SelectTrigger>
@@ -81,7 +100,7 @@ export function AddTransactionModal() {
                                 <SelectItem value="gaji">Gaji / Pendapatan</SelectItem>
                                 <SelectItem value="makanan">Makanan & Minuman</SelectItem>
                                 <SelectItem value="transportasi">Transportasi</SelectItem>
-                                <SelectItem value="hiburan">Hiburan / Hiburan</SelectItem>
+                                <SelectItem value="hiburan">Hiburan</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -90,6 +109,7 @@ export function AddTransactionModal() {
                     <div className="space-y-2">
                         <Label htmlFor="description" className="text-sm font-medium text-zinc-700">Catatan Ringkas</Label>
                         <Input
+                            name="description" // WAJIB: Ditambahkan atribut name
                             id="description"
                             placeholder="Beli kopi susu, bonus projek, dll"
                             className="rounded-xl border-zinc-200"
@@ -103,14 +123,16 @@ export function AddTransactionModal() {
                             variant="outline"
                             onClick={() => setOpen(false)}
                             className="rounded-xl"
+                            disabled={isPending}
                         >
                             Batal
                         </Button>
                         <Button
                             type="submit"
+                            disabled={isPending} // Mengunci tombol saat loading agar data tidak dobel
                             className="bg-zinc-950 text-white hover:bg-zinc-900 rounded-xl px-5"
                         >
-                            Simpan Catatan
+                            {isPending ? "Menyimpan..." : "Simpan Catatan"}
                         </Button>
                     </div>
                 </form>

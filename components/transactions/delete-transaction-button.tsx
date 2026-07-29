@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { deleteTransaction } from "@/app/transactions/actions";
+import { deleteTransaction } from "@/app/actions/transaction";
 
 type Props = {
   id: string;
@@ -33,7 +33,7 @@ export function DeleteTransactionButton({ id, note, amountLabel }: Props) {
     startTransition(async () => {
       const result = await deleteTransaction(id);
       if (result.ok) setOpen(false);
-      else setError(result.message);
+      else setError(error);
     });
   };
 
