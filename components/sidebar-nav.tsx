@@ -1,23 +1,27 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowUpRight,
   BarChart3,
   LayoutDashboard,
+  Loader2,
   LogOut,
   Tags,
   User,
   Wallet,
 } from "lucide-react";
+import { useState } from "react";
 
 import { AddTransactionModal } from "@/components/add-transaction-modal";
+import { Logo } from "@/components/logo";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/lib/auth/context";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/budget", label: "Budget", icon: Wallet },
   { href: "/statistics", label: "Statistics", icon: BarChart3 },
   { href: "/transactions", label: "Transactions", icon: ArrowUpRight },
@@ -28,6 +32,13 @@ const navLinks = [
 // daftar menu yang terduplikat.
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { session, isLoading, signOut } = useAuth();
+  const [keluar, setKeluar] = useState(false);
+
+  const handleSignOut = async () => {
+    setKeluar(true);
+    await signOut();
+  };
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -54,26 +65,8 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="h-20 flex items-center gap-3 px-6 border-b border-zinc-100 shrink-0">
-        <div className="w-9 h-9 shrink-0 relative overflow-hidden rounded-xl bg-zinc-50 border border-zinc-100">
-          <Image
-            src="/images/A.png"
-            alt="Logo Arus"
-            fill
-            sizes="36px"
-            className="object-cover"
-            priority
-          />
-        </div>
-
-        <div className="flex flex-col justify-center">
-          <span className="font-bold text-xl tracking-tight text-zinc-900 leading-none">
-            Arus.
-          </span>
-          <span className="text-[10px] font-medium text-zinc-400 mt-1 uppercase tracking-wider">
-            Finance Tracker
-          </span>
-        </div>
+      <div className="h-20 flex items-center px-6 border-b border-zinc-100 shrink-0">
+        <Logo size="md" withTagline />
       </div>
 
       <nav className="flex-1 flex flex-col px-4 py-6 overflow-y-auto justify-between">
@@ -106,6 +99,26 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             "border-t border-zinc-100 bg-white rounded-b-2xl"
           )}
         >
+          {/* Identitas pemilik session. Datang dari AuthProvider di
+              app/(dashboard)/layout.tsx. */}
+          <div className="mb-1 flex min-w-0 items-center gap-3 px-4 py-2">
+            {isLoading ? (
+              <div className="w-full space-y-1.5">
+                <Skeleton className="h-3.5 w-24 rounded-md" />
+                <Skeleton className="h-3 w-36 rounded-md" />
+              </div>
+            ) : (
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-zinc-900">
+                  {session?.user.name ?? "Tamu"}
+                </p>
+                <p className="truncate text-xs text-zinc-400">
+                  {session?.user.email ?? "Belum masuk"}
+                </p>
+              </div>
+            )}
+          </div>
+
           <Link
             href="/settings"
             onClick={onNavigate}
@@ -117,15 +130,23 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           </Link>
 
           <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={keluar}
             className={cn(
               "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium select-none",
               "transition-all duration-200 ease-in-out group active:scale-[0.98]",
+              "disabled:pointer-events-none disabled:opacity-50",
               // Sentuhan UX Destructive: aksen Rose yang halus
               "text-zinc-500 hover:bg-rose-50 hover:text-rose-600"
             )}
           >
-            <LogOut className="w-5 h-5 shrink-0 text-zinc-400 transition-transform duration-200 group-hover:text-rose-600 group-hover:scale-105" />
-            <span className="tracking-tight">Logout</span>
+            {keluar ? (
+              <Loader2 className="w-5 h-5 shrink-0 animate-spin text-zinc-400" />
+            ) : (
+              <LogOut className="w-5 h-5 shrink-0 text-zinc-400 transition-transform duration-200 group-hover:text-rose-600 group-hover:scale-105" />
+            )}
+            <span className="tracking-tight">{keluar ? "Keluar" : "Logout"}</span>
           </button>
         </div>
       </nav>

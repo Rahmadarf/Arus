@@ -30,10 +30,15 @@ export function CategoriesTable({ categories, onEdit, onDelete }: Props) {
         <TableHeader className="bg-zinc-50/70">
           <TableRow>
             <TableHead className="font-medium text-zinc-500">Kategori</TableHead>
-            <TableHead className="w-32 text-right font-medium text-zinc-500">
+            {/* Lebar tetap dikecilkan di layar sempit. Dengan table-fixed,
+                lebar kolom ini dipenuhi lebih dulu — kalau terlalu besar,
+                kolom Kategori kehabisan ruang dan namanya hilang total. */}
+            <TableHead className="w-16 text-right font-medium text-zinc-500 sm:w-32">
               Transaksi
             </TableHead>
-            <TableHead className="w-24 text-right font-medium text-zinc-500">Aksi</TableHead>
+            <TableHead className="w-20 text-right font-medium text-zinc-500 sm:w-24">
+              Aksi
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -47,18 +52,27 @@ export function CategoriesTable({ categories, onEdit, onDelete }: Props) {
                       className="size-2.5 shrink-0 rounded-full"
                       style={{ backgroundColor: category.color }}
                     />
-                    <CategoryIcon name={category.icon} className="size-4 shrink-0 text-zinc-400" />
-                    <span className="truncate text-sm font-medium text-zinc-700">
-                      {category.name}
-                    </span>
-                    {category.isDefault && (
-                      <Badge
-                        variant="secondary"
-                        className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600"
-                      >
-                        Bawaan
-                      </Badge>
-                    )}
+                    {/* Ikon disembunyikan di layar sempit: titik warna sudah
+                        jadi penanda, dan ruangnya lebih berguna untuk nama. */}
+                    <CategoryIcon
+                      name={category.icon}
+                      className="hidden size-4 shrink-0 text-zinc-400 sm:block"
+                    />
+                    {/* Di layar sempit badge turun ke baris kedua supaya nama
+                        kategori tidak terdesak sampai hilang. */}
+                    <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                      <span className="truncate text-sm font-medium text-zinc-700">
+                        {category.name}
+                      </span>
+                      {category.isDefault && (
+                        <Badge
+                          variant="secondary"
+                          className="w-fit shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600"
+                        >
+                          Bawaan
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </TableCell>
 

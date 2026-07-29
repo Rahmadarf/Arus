@@ -1,5 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
+
+import { Logo } from "@/components/logo";
 
 const APP_NAME = "Arus";
 
@@ -35,11 +36,10 @@ export function Footer() {
         {/* max-w-7xl menyamai lebar konten di <main> supaya sejajar. */}
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-2">
           <p className="flex items-center gap-2">
-            {/* Logo dekoratif: teks "Arus" tepat di sebelahnya sudah
-                menyampaikan hal yang sama, jadi alt sengaja dikosongkan. */}
-            <span className="relative size-5 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
-              <Image src="/images/A.png" alt="" fill sizes="20px" className="object-cover" />
-            </span>
+            {/* markOnly: nama aplikasi sudah tertulis di baris hak cipta
+                sebelah kanan lambang, jadi wordmark-nya tidak perlu diulang.
+                alt dibiarkan kosong karena teks itu sudah mewakilinya. */}
+            <Logo size="xs" markOnly className="gap-0" />
             © {year} {APP_NAME}
           </p>
 

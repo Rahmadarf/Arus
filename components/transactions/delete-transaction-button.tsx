@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { deleteTransaction } from "@/app/transactions/actions";
+import { deleteTransaction } from "@/app/(dashboard)/transactions/actions";
 
 type Props = {
   id: string;
