@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { Menu } from "lucide-react";
 
+import { Logo } from "@/components/logo";
 import { SidebarNav } from "@/components/sidebar-nav";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,12 +43,7 @@ export function MobileNav() {
         </SheetContent>
       </Sheet>
 
-      <div className="flex items-center gap-2.5">
-        <div className="relative size-8 shrink-0 overflow-hidden rounded-lg border border-zinc-100 bg-zinc-50">
-          <Image src="/images/A.png" alt="Logo Arus" fill sizes="32px" className="object-cover" />
-        </div>
-        <span className="text-lg font-bold tracking-tight text-zinc-900">Arus.</span>
-      </div>
+      <Logo size="sm" className="gap-2.5" />
     </header>
   );
 }
