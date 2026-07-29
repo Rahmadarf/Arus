@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import Sidebar from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { Footer } from "@/components/footer";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -44,6 +46,10 @@ export default function RootLayout({
       {/* Gunakan font-sans di body agar font Inter menjadi default aplikasi */}
       <body className="h-full font-sans bg-zinc-50 text-zinc-900 antialiased">
 
+        {/* TooltipProvider dipasang di akar: Radix butuh satu provider untuk
+            mengatur jeda tampil antar tooltip di seluruh aplikasi. */}
+        <TooltipProvider>
+
         {/* Pembungkus Utama Dashboard */}
         <div className="flex h-screen overflow-hidden p-3 gap-3 md:p-4 md:gap-4 bg-zinc-50">
 
@@ -74,6 +80,9 @@ export default function RootLayout({
 
         </div>
 
+        <Toaster position="bottom-right" />
+
+        </TooltipProvider>
 
       </body>
     </html>

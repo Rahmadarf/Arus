@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const APP_NAME = "Arus";
@@ -21,24 +22,43 @@ export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="shrink-0 border-t border-border px-4 py-4 text-xs text-muted-foreground sm:px-6 md:px-8">
-      {/* max-w-7xl menyamai lebar konten di <main> supaya sejajar. */}
-      <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-2">
-        <p>
-          © {year} {APP_NAME}
-        </p>
+    <footer className="shrink-0">
+      {/* Garis pemisah sekaligus penanda: beralih dari emerald (pemasukan) ke
+          rose (pengeluaran) — dualitas yang jadi inti aplikasi ini. Memakai
+          token chart yang sudah dipakai grafik, jadi ikut dark mode. */}
+      <div
+        aria-hidden
+        className="h-px w-full bg-linear-to-r from-chart-1/60 via-border to-chart-2/60"
+      />
 
-        <div className="flex items-center gap-4">
-          <Link href="/privasi" className={linkClass}>
-            Privasi
-          </Link>
-          <Link href="/ketentuan" className={linkClass}>
-            Ketentuan
-          </Link>
-          {/* Versi dipakai saat pengguna melaporkan bug. */}
-          <span className="font-mono" title="Versi aplikasi">
-            {APP_VERSION}
-          </span>
+      <div className="px-4 py-4 text-xs text-muted-foreground sm:px-6 md:px-8">
+        {/* max-w-7xl menyamai lebar konten di <main> supaya sejajar. */}
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-2">
+          <p className="flex items-center gap-2">
+            {/* Logo dekoratif: teks "Arus" tepat di sebelahnya sudah
+                menyampaikan hal yang sama, jadi alt sengaja dikosongkan. */}
+            <span className="relative size-5 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
+              <Image src="/images/A.png" alt="" fill sizes="20px" className="object-cover" />
+            </span>
+            © {year} {APP_NAME}
+          </p>
+
+          <div className="flex items-center gap-4">
+            <Link href="/privasi" className={linkClass}>
+              Privasi
+            </Link>
+            <Link href="/ketentuan" className={linkClass}>
+              Ketentuan
+            </Link>
+            {/* Versi dipakai saat pengguna melaporkan bug — dibuat sedikit
+                menonjol supaya gampang dibacakan, tanpa jadi ramai. */}
+            <span
+              className="rounded bg-muted px-1.5 py-0.5 font-mono tabular-nums"
+              title="Versi aplikasi"
+            >
+              {APP_VERSION}
+            </span>
+          </div>
         </div>
       </div>
     </footer>

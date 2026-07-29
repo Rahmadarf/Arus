@@ -8,6 +8,7 @@ import {
   BarChart3,
   LayoutDashboard,
   LogOut,
+  Tags,
   User,
   Wallet,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const navLinks = [
   { href: "/budget", label: "Budget", icon: Wallet },
   { href: "/statistics", label: "Statistics", icon: BarChart3 },
   { href: "/transactions", label: "Transactions", icon: ArrowUpRight },
+  { href: "/categories", label: "Categories", icon: Tags },
 ];
 
 // Dipakai bersama oleh sidebar desktop dan drawer mobile, jadi tidak ada
