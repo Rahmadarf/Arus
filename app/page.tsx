@@ -1,59 +1,79 @@
-import BalanceCard from "@/components/balance-card"
-import { OverviewChart } from "@/components/overview-chart"
-import { RecentTransactions } from "@/components/recent-transactions";
-import { getTransactionByUserId } from "./actions/transaction";
+import type { Metadata } from "next";
 
-export default async function DashboardPage() {
+import { ClosingCta } from "@/components/landing/closing-cta";
+import { Features } from "@/components/landing/features";
+import { Hero } from "@/components/landing/hero";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { LandingNav } from "@/components/landing/landing-nav";
+import { Trust } from "@/components/landing/trust";
+import { Footer } from "@/components/footer";
 
-  const testingUserId = "id-user-testing-rahmad-123";
+const JUDUL = "Arus — Catat pemasukan dan pengeluaran harian";
+const DESKRIPSI =
+  "Aplikasi pencatat keuangan pribadi: catat transaksi, saring per kategori, dan lihat komposisi pengeluaranmu per bulan. Gratis selama masa pengembangan.";
 
-  const dataTransactions = await getTransactionByUserId(testingUserId)
-  
+/**
+ * metadataBase dibutuhkan agar URL gambar Open Graph jadi absolut. Setel
+ * NEXT_PUBLIC_SITE_URL di lingkungan produksi; localhost hanya cadangan untuk
+ * pengembangan.
+ */
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: JUDUL,
+  description: DESKRIPSI,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    url: "/",
+    siteName: "Arus",
+    title: JUDUL,
+    description: DESKRIPSI,
+    // Berkas ini harus kamu sediakan sendiri di public/og-image.png (1200x630).
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Arus" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: JUDUL,
+    description: DESKRIPSI,
+    images: ["/og-image.png"],
+  },
+};
+
+/**
+ * Landing page publik.
+ *
+ * Berada di app/page.tsx — di luar route group (auth) maupun (dashboard) —
+ * jadi ia hanya memakai root layout. Tidak ada sidebar, tidak ada
+ * AuthProvider, dan tidak perlu route group (marketing) tersendiri.
+ *
+ * Seluruh halaman ini Server Component. Satu-satunya JavaScript yang dikirim
+ * berasal dari menu mobile di components/landing/mobile-menu.tsx.
+ */
+export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
-        <Logo size="sm" />
+      <a
+        href="#konten"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-zinc-950 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+      >
+        Lewati ke konten utama
+      </a>
 
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" className="h-9 rounded-xl" asChild>
-            <Link href="/login">Masuk</Link>
-          </Button>
-          <Button
-            className="h-9 rounded-xl bg-zinc-950 text-white hover:bg-zinc-900"
-            asChild
-          >
-            <Link href="/register">Daftar</Link>
-          </Button>
-        </div>
-      </header>
+      <LandingNav />
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 sm:px-6">
-        <section className="py-14 sm:py-20">
-          <h1 className="max-w-2xl text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            Catat arus kas. Lihat polanya.
-          </h1>
-          <p className="mt-3 max-w-xl text-base text-zinc-500">
-            Arus menyimpan pemasukan dan pengeluaran harian Anda, lalu menunjukkan ke
-            mana uang itu benar-benar pergi.
-          </p>
-
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Button
-              className="h-10 rounded-xl bg-zinc-950 px-5 text-white hover:bg-zinc-900"
-              asChild
-            >
-              <Link href="/register">Buat akun</Link>
-            </Button>
-            <Button variant="outline" className="h-10 rounded-xl px-5" asChild>
-              <Link href="/login">Sudah punya akun</Link>
-            </Button>
-          </div>
-
-        {/* Bagian 3: Daftar Transaksi Terbaru */}
-        <div className="w-full">
-          <RecentTransactions data={dataTransactions?.slice(0, 5) || []} />
-        </div>
-      </div>
+      <main
+        id="konten"
+        className="mx-auto w-full max-w-7xl flex-1 px-4 sm:px-6 lg:px-8"
+      >
+        <Hero />
+        <Features />
+        <HowItWorks />
+        <Trust />
+        <ClosingCta />
+      </main>
 
       <Footer />
     </div>

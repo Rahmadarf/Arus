@@ -53,5 +53,21 @@ export function authErrorMessage(error: unknown): string {
   return AUTH_ERROR_MESSAGE.NETWORK_ERROR;
 }
 
-/** Nama cookie session. Harus sama persis dengan yang dipakai backend. */
+/** Nama cookie session milik jalur mock (lib/auth/mock.ts). */
 export const SESSION_COOKIE = "session";
+
+/**
+ * Semua nama cookie yang menandakan ada session.
+ *
+ * better-auth (lib/auth.ts) memakai `better-auth.session_token`, dan menambah
+ * awalan `__Secure-` saat berjalan di HTTPS. `session` ikut dicek karena jalur
+ * mock masih memakai nama itu — hapus baris terakhir begitu mock dibuang.
+ *
+ * Sengaja bebas dari next/headers supaya bisa dipakai di proxy.ts maupun di
+ * Server Component. Satu daftar, jadi keduanya tidak mungkin berbeda.
+ */
+export const NAMA_COOKIE_SESSION = [
+  "better-auth.session_token",
+  "__Secure-better-auth.session_token",
+  SESSION_COOKIE,
+] as const;

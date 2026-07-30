@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { SESSION_COOKIE } from "@/lib/auth/types";
+import { NAMA_COOKIE_SESSION } from "@/lib/auth/types";
 
 // ============================================================================
 // Proxy ini HANYA mengecek keberadaan cookie. Verifikasi tanda tangan dan
@@ -16,17 +16,21 @@ import { SESSION_COOKIE } from "@/lib/auth/types";
 // diganti `proxy.ts` dengan fungsi bernama `proxy`. Perilakunya sama.
 // ============================================================================
 
-/**
- * Halaman yang hanya masuk akal saat BELUM login.
- *
- * "/" ikut di sini karena ia halaman promosi publik: pengunjung yang sudah
- * punya session tidak perlu disuguhi ajakan mendaftar lagi. Beranda dashboard
- * ada di /dashboard.
- */
+/** Halaman yang hanya masuk akal saat BELUM login. */
 const RUTE_TAMU = ["/login", "/register", "/forgot-password"];
 
-/** Dicocokkan persis, bukan lewat prefiks — "/" adalah awalan semua rute. */
-const RUTE_TAMU_PERSIS = ["/"];
+/**
+ * Halaman publik yang boleh dibuka siapa pun, login atau tidak.
+ *
+ * "/" ada di sini, BUKAN di RUTE_TAMU. Sebelumnya ia diperlakukan sebagai rute
+ * tamu, sehingga pengunjung yang sudah punya session langsung dialihkan ke
+ * /transactions dan landing page-nya tidak pernah terlihat. Landing page perlu
+ * bisa dibuka dalam kedua keadaan, karena tombolnya sendiri yang berubah:
+ * "Mulai Gratis" untuk tamu, "Buka Dashboard" untuk yang sudah masuk.
+ *
+ * Dicocokkan persis, bukan lewat prefiks — "/" adalah awalan semua rute.
+ */
+const RUTE_PUBLIK_PERSIS = ["/"];
 
 /** Tujuan setelah login kalau tidak ada callbackUrl yang sah. */
 const BERANDA_TERAUTENTIKASI = "/transactions";
@@ -34,10 +38,19 @@ const BERANDA_TERAUTENTIKASI = "/transactions";
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  const punyaSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
-  const halamanTamu =
-    RUTE_TAMU_PERSIS.includes(pathname) ||
-    RUTE_TAMU.some((rute) => pathname === rute || pathname.startsWith(`${rute}/`));
+  const punyaSession = NAMA_COOKIE_SESSION.some(
+    (nama) => Boolean(request.cookies.get(nama)?.value)
+  );
+
+  const halamanPublik = RUTE_PUBLIK_PERSIS.includes(pathname);
+  const halamanTamu = RUTE_TAMU.some(
+    (rute) => pathname === rute || pathname.startsWith(`${rute}/`)
+  );
+
+  // Halaman publik dibiarkan lewat apa pun status loginnya.
+  if (halamanPublik) {
+    return NextResponse.next();
+  }
 
   // Sudah login tapi membuka halaman masuk/daftar — tidak ada gunanya.
   if (punyaSession && halamanTamu) {
