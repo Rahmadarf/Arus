@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowUpRight, BarChart3, Tags } from "lucide-react";
 
 import { ClosingCta } from "@/components/landing/closing-cta";
 import { Features } from "@/components/landing/features";
@@ -64,6 +66,7 @@ export default function LandingPage() {
 
       <LandingNav />
 
+<<<<<<< HEAD
       <main
         id="konten"
         className="mx-auto w-full max-w-7xl flex-1 px-4 sm:px-6 lg:px-8"
@@ -73,6 +76,85 @@ export default function LandingPage() {
         <HowItWorks />
         <Trust />
         <ClosingCta />
+=======
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 sm:px-6">
+        <section className="py-14 sm:py-20">
+          <h1 className="max-w-2xl text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
+            Catat arus kas. Lihat polanya.
+          </h1>
+          <p className="mt-3 max-w-xl text-base text-zinc-500">
+            Arus menyimpan pemasukan dan pengeluaran harian Anda, lalu menunjukkan ke
+            mana uang itu benar-benar pergi.
+          </p>
+
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Button
+              className="h-10 rounded-xl bg-zinc-950 px-5 text-white hover:bg-zinc-900"
+              asChild
+            >
+              <Link href="/register">Buat akun</Link>
+            </Button>
+            <Button variant="outline" className="h-10 rounded-xl px-5" asChild>
+              <Link href="/login">Sudah punya akun</Link>
+            </Button>
+          </div>
+
+          {/* Pratinjau buku kas: hal paling khas dari produk ini, ditampilkan
+              apa adanya alih-alih digambarkan lewat ilustrasi. */}
+          <div className="mt-12 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+            {/* Garis penanda yang sama dengan footer: emerald untuk pemasukan,
+                rose untuk pengeluaran — dua kutub yang jadi inti aplikasi. */}
+            <div
+              aria-hidden
+              className="h-px w-full bg-linear-to-r from-chart-1/60 via-border to-chart-2/60"
+            />
+
+            <ul className="divide-y divide-zinc-100">
+              {CONTOH.map((baris) => (
+                <li
+                  key={baris.tanggal}
+                  className="flex items-center gap-3 px-4 py-3.5 sm:px-6"
+                >
+                  {/* Tanggal disembunyikan di layar sempit: di pratinjau ini
+                      catatan dan nominal yang perlu terbaca utuh. */}
+                  <span className="hidden w-24 shrink-0 text-sm text-zinc-500 sm:block">
+                    {formatTanggal(baris.tanggal)}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-700">
+                    {baris.catatan}
+                  </span>
+                  <span
+                    className={cn(
+                      "shrink-0 text-sm font-semibold tabular-nums",
+                      baris.masuk ? "text-emerald-600" : "text-rose-600"
+                    )}
+                  >
+                    {baris.masuk ? "+ " : "- "}
+                    {formatRupiah(baris.nominal)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="grid gap-4 pb-16 sm:grid-cols-3">
+          {FITUR.map((fitur) => (
+            <div
+              key={fitur.href}
+              className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm"
+            >
+              <div className="flex size-9 items-center justify-center rounded-xl bg-zinc-100">
+                <fitur.icon className="size-4 text-zinc-500" />
+              </div>
+              <h2 className="mt-3.5 text-sm font-semibold text-zinc-900">
+                {fitur.judul}
+              </h2>
+              <p className="mt-1 text-sm text-zinc-500">{fitur.isi}</p>
+            </div>
+          ))}
+        </section>
+>>>>>>> a0eba47884ba769162da62fb2a67c7c589de35a5
       </main>
 
       <Footer />

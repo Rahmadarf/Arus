@@ -341,3 +341,4 @@
 [2026-07-30T02:33:48.970Z] [INFO] Starting worker: consolidate (1/2 concurrent)
 [2026-07-30T02:33:48.986Z] [INFO] Consolidate worker: distillation skipped (no-db)
 [2026-07-30T02:33:48.988Z] [INFO] Worker consolidate completed in 31ms
+[2026-07-30T02:39:48.966Z] [INFO] Worker audit deferred: Memory too low: 8.2% free
