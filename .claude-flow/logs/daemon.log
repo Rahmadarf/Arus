@@ -364,3 +364,27 @@
 [2026-07-30T03:01:49.031Z] [INFO] Worker audit completed in 9ms
 [2026-07-30T03:01:49.033Z] [INFO] Worker map completed in 9ms
 [2026-07-30T03:01:49.035Z] [INFO] Worker audit completed in 8ms
+[2026-07-30T03:03:48.999Z] [INFO] Worker consolidate deferred: Memory too low: 7.0% free
+[2026-07-30T03:05:48.980Z] [INFO] Starting worker: testgaps (1/2 concurrent)
+[2026-07-30T03:05:48.982Z] [INFO] Worker testgaps completed in 4ms
+[2026-07-30T03:05:48.986Z] [INFO] Starting worker: consolidate (1/2 concurrent)
+[2026-07-30T03:05:48.988Z] [INFO] Consolidate worker: distillation skipped (no-db)
+[2026-07-30T03:05:48.988Z] [INFO] Worker consolidate completed in 3ms
+[2026-07-30T03:09:49.057Z] [INFO] Worker audit deferred: Memory too low: 10.0% free
+[2026-07-30T03:12:49.027Z] [INFO] Starting worker: map (1/2 concurrent)
+[2026-07-30T03:12:49.030Z] [INFO] Worker map completed in 6ms
+[2026-07-30T03:12:49.038Z] [INFO] Starting worker: audit (1/2 concurrent)
+[2026-07-30T03:12:49.039Z] [INFO] Worker audit completed in 6ms
+[2026-07-30T03:16:49.013Z] [INFO] Worker optimize deferred: Memory too low: 9.9% free
+[2026-07-30T03:19:49.067Z] [INFO] Starting worker: audit (1/2 concurrent)
+[2026-07-30T03:19:49.069Z] [INFO] Worker audit completed in 6ms
+[2026-07-30T03:19:49.078Z] [INFO] Starting worker: optimize (1/2 concurrent)
+[2026-07-30T03:19:49.079Z] [INFO] Worker optimize completed in 7ms
+[2026-07-30T03:25:48.987Z] [INFO] Worker testgaps deferred: Memory too low: 6.1% free
+[2026-07-30T03:27:49.045Z] [INFO] Worker map deferred: Memory too low: 7.5% free
+[2026-07-30T03:29:49.087Z] [INFO] Worker audit deferred: Memory too low: 7.7% free
+[2026-07-30T03:31:49.019Z] [INFO] Worker optimize deferred: Memory too low: 8.0% free
+[2026-07-30T03:33:49.016Z] [INFO] Worker consolidate deferred: Memory too low: 7.7% free
+[2026-07-30T03:39:49.097Z] [INFO] Worker audit deferred: Memory too low: 8.4% free
+[2026-07-30T03:42:49.062Z] [INFO] Worker map deferred: Memory too low: 8.1% free
+[2026-07-30T03:45:48.999Z] [INFO] Worker testgaps deferred: Memory too low: 6.1% free
