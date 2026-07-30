@@ -4,11 +4,8 @@ import { AuthCta } from "@/components/landing/auth-cta";
 import { MobileMenu } from "@/components/landing/mobile-menu";
 import { NAV_LINKS } from "@/components/landing/nav-links";
 import { Logo } from "@/components/logo";
-import { isLoggedIn } from "@/lib/auth/session-server";
 
-export async function LandingNav() {
-  const sudahMasuk = await isLoggedIn();
-
+export function LandingNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200/70 bg-zinc-50/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
@@ -36,7 +33,7 @@ export async function LandingNav() {
           <div className="hidden md:block">
             <AuthCta size="sm" />
           </div>
-          <MobileMenu sudahMasuk={sudahMasuk} />
+          <MobileMenu />
         </div>
       </div>
     </header>

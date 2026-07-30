@@ -13,11 +13,8 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
  * Satu-satunya Client Component di halaman ini. Butuh state karena drawer
  * harus bisa dibuka, ditutup lewat Esc, dan menutup sendiri setelah sebuah
  * tautan diklik.
- *
- * Status login dikirim sebagai prop dari navbar (Server Component), bukan
- * dibaca ulang di sini — supaya tidak ada logika auth kedua yang bisa berbeda.
  */
-export function MobileMenu({ sudahMasuk }: { sudahMasuk: boolean }) {
+export function MobileMenu() {
   const [open, setOpen] = useState(false);
   const tutup = () => setOpen(false);
 
@@ -55,32 +52,19 @@ export function MobileMenu({ sudahMasuk }: { sudahMasuk: boolean }) {
         </nav>
 
         <div className="mt-auto flex flex-col gap-2 border-t border-zinc-100 p-4">
-          {sudahMasuk ? (
-            <Button
-              className="h-10 w-full rounded-xl bg-zinc-950 text-white hover:bg-zinc-900"
-              asChild
-            >
-              <Link href="/transactions" onClick={tutup}>
-                Buka Dashboard
-              </Link>
-            </Button>
-          ) : (
-            <>
-              <Button
-                className="h-10 w-full rounded-xl bg-zinc-950 text-white hover:bg-zinc-900"
-                asChild
-              >
-                <Link href="/register" onClick={tutup}>
-                  Mulai Gratis
-                </Link>
-              </Button>
-              <Button variant="outline" className="h-10 w-full rounded-xl" asChild>
-                <Link href="/login" onClick={tutup}>
-                  Masuk
-                </Link>
-              </Button>
-            </>
-          )}
+          <Button
+            className="h-10 w-full rounded-xl bg-zinc-950 text-white hover:bg-zinc-900"
+            asChild
+          >
+            <Link href="/register" onClick={tutup}>
+              Daftar
+            </Link>
+          </Button>
+          <Button variant="outline" className="h-10 w-full rounded-xl" asChild>
+            <Link href="/login" onClick={tutup}>
+              Masuk
+            </Link>
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
