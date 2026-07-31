@@ -1,5 +1,6 @@
 "use server"
 
+
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -98,6 +99,7 @@ export async function getTransactionByUserId(userId: String) {
     return transaction
   } catch (e) {
     console.error("Error fetching transaction", e)
+    return [];
   }
 }
 

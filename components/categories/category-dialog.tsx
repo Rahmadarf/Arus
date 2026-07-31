@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
+import { createCategoriesByUserId, updateCategory } from "@/app/actions/category";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +36,7 @@ import {
   type CategoryType,
 } from "@/lib/categories/types";
 import { cn } from "@/lib/utils";
+import { refresh } from "next/cache";
 
 /** Nama warna untuk pembaca layar — swatch tanpa label tidak terbaca. */
 const COLOR_LABELS = ["Hijau", "Merah", "Kuning", "Ungu", "Tosca", "Abu-abu"];
@@ -141,6 +144,8 @@ export function CategoryDialog({
   const colorValue = useWatch({ control, name: "color" });
   const iconValue = useWatch({ control, name: "icon" });
 
+  const { refresh } = useCategories();
+
   // Isi ulang form setiap dialog dibuka, supaya sisa isian sebelumnya tidak
   // bocor ke sesi berikutnya.
   useEffect(() => {
@@ -154,17 +159,35 @@ export function CategoryDialog({
     });
   }, [open, category, defaultType, reset]);
 
-  const onSubmit = handleSubmit(async (data) => {
-    const input = {
-      name: data.name.trim(),
-      type: data.type,
-      color: data.color,
-      icon: data.icon === NO_ICON ? undefined : data.icon,
-    };
+  // components/categories/category-dialog.tsx
 
-    const ok = category ? await update(category.id, input) : await create(input);
-    if (ok) onOpenChange(false);
+  const onSubmit = handleSubmit(async (data) => {
+    try {
+      // 1. Definisikan variabel penampung respon objek dari server backend
+      let result;
+
+      if (category) {
+        // Jalankan fungsi edit kategori (mengembalikan objek respon)
+        result = await updateCategory(category.id, data);
+      } else {
+        // Jalankan fungsi tambah kategori baru (mengembalikan objek respon)
+        result = await createCategoriesByUserId(data);
+      }
+
+      // 2. ✨ PERBAIKAN UTAMA: Periksa properti '.success' di dalam objek, bukan variabel 'result' nya langsung
+      if (result && result.success) {
+        refresh();
+        onOpenChange(false); // Tutup pop-up modal otomatis jika sukses mendarat di Supabase
+      } else {
+        // Jika gagal, tampilkan pesan eror yang dikirim dari backend server action Anda
+        alert(result?.error || "Gagal menyimpan kategori.");
+      }
+    } catch (error) {
+      console.error("Gagal mengeksekusi submit kategori:", error);
+      alert("Terjadi kesalahan koneksi ke server database.");
+    }
   });
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

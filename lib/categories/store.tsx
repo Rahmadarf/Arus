@@ -4,7 +4,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer,
 import { toast } from "sonner";
 
 import { SEED_CATEGORIES } from "@/lib/categories/seed";
-import type { Category, CategoryInput } from "@/lib/categories/types";
+import type { Category, CategoryInput, CategoryType } from "@/lib/categories/types";
+
+import { createCategoriesByUserId, getCategoriesById, reassignAndDeleteCategory, deleteCategory } from "@/app/actions/category";
+
+const testUserId = "id-user-testing-rahmad-123";
 
 // ============================================================================
 // LAPISAN DATA — SATU-SATUNYA TITIK YANG BERUBAH SAAT BACKEND SIAP.
@@ -39,23 +43,46 @@ async function simulateRequest(failureRate: number) {
 
 // TODO: ganti isi dengan fetch API. Signature dan return type TIDAK boleh berubah.
 export async function getCategories(): Promise<Category[]> {
-  await simulateRequest(LOAD_FAILURE_RATE);
-  return db.map((item) => ({ ...item }));
+
+  try {
+    const result = await getCategoriesById();
+
+    if (!result.success || !result.data) {
+      return []
+    }
+
+    return result.data.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      type: cat.type.toLowerCase() as CategoryType,
+      color: cat.color || "A1A1AA",
+      icon: cat.icon || undefined,
+      transactionCount: 0,
+      isDefault: false
+    }))
+  } catch (e) {
+    console.error(e)
+    return []
+  }
 }
 
-// TODO: ganti isi dengan fetch API. Signature dan return type TIDAK boleh berubah.
-export async function createCategory(input: CategoryInput): Promise<Category> {
-  await simulateRequest(MUTATION_FAILURE_RATE);
+export async function createCategories(input: any): Promise<Category> {
+  const result = await createCategoriesByUserId(input)
 
-  const created: Category = {
-    ...input,
-    id: `cat-${Date.now().toString(36)}`,
+  if (!result.success) {
+    throw new Error(result.error || "Gagal membuat kategori")
+  }
+  
+  return {
+    id: result.data?.id as string,
+    name: result.data?.name as string,
+    type: result.data?.type.toLowerCase() as CategoryType,
+    color: result.data?.color || "A1A1AA",
+    icon: result.data?.icon || undefined,
     transactionCount: 0,
-    isDefault: false,
-  };
-
-  db = [...db, created];
-  return { ...created };
+    isDefault: false
+  }
+  
 }
 
 // TODO: ganti isi dengan fetch API. Signature dan return type TIDAK boleh berubah.
@@ -72,18 +99,18 @@ export async function updateCategory(id: string, input: CategoryInput): Promise<
   return { ...updated };
 }
 
-// TODO: ganti isi dengan fetch API. Signature dan return type TIDAK boleh berubah.
-export async function deleteCategory(id: string): Promise<void> {
-  await simulateRequest(MUTATION_FAILURE_RATE);
-
-  const target = db.find((item) => item.id === id);
-  if (!target) throw new Error("Kategori tidak ditemukan");
-  if (target.isDefault) throw new Error("Kategori bawaan tidak bisa dihapus");
-  if (target.transactionCount > 0) {
-    throw new Error("Kategori masih dipakai transaksi");
+export async function deleteCategoryById(id: string): Promise<void> {
+  if (!id) {
+    throw new Error("Category ID is required")
   }
 
-  db = db.filter((item) => item.id !== id);
+  const result = await deleteCategory(id)
+
+  if (!result.success) {
+    throw new Error(result.error || "Failed to delete category")
+  }
+
+  
 }
 
 /**
@@ -100,24 +127,12 @@ export async function deleteCategory(id: string): Promise<void> {
  */
 // TODO: ganti isi dengan fetch API. Signature dan return type TIDAK boleh berubah.
 export async function reassignAndDelete(fromId: string, toId: string): Promise<void> {
-  await simulateRequest(MUTATION_FAILURE_RATE);
+  
+  const result = await reassignAndDeleteCategory(fromId, toId);
 
-  const from = db.find((item) => item.id === fromId);
-  const to = db.find((item) => item.id === toId);
-
-  if (!from || !to) throw new Error("Kategori tidak ditemukan");
-  if (from.isDefault) throw new Error("Kategori bawaan tidak bisa dihapus");
-  if (from.type !== to.type) {
-    throw new Error("Kategori tujuan harus bertipe sama");
+  if (!result.success) {
+    throw new Error(result.error || "Gagal memindahkan kategori")
   }
-
-  const moved = from.transactionCount;
-
-  db = db
-    .filter((item) => item.id !== fromId)
-    .map((item) =>
-      item.id === toId ? { ...item, transactionCount: item.transactionCount + moved } : item
-    );
 }
 
 // ============================================================================
@@ -236,7 +251,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       return runOptimistic(
         [...itemsRef.current, optimistic],
         async () => {
-          const created = await createCategory(input);
+          const created = await createCategories(input);
           return [...itemsRef.current.filter((item) => item.id !== optimistic.id), created];
         },
         `Kategori "${input.name}" ditambahkan`
@@ -266,7 +281,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
       return runOptimistic(
         itemsRef.current.filter((item) => item.id !== id),
-        () => deleteCategory(id),
+        () => deleteCategoryById(id),
         `Kategori "${target?.name ?? ""}" dihapus`
       );
     },
