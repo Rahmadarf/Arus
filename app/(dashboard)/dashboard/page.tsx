@@ -36,7 +36,6 @@ export default async function DashboardPage() {
         <p className="text-sm text-zinc-500 mt-0.5">Ringkasan aktivitas keuangan Anda bulan ini.</p>
       </div>
 
-      {/* Tempelkan Pilihan 1 atau Pilihan 2 di bawah ini */}
       <div className="flex flex-col gap-6 w-full">
         {/* Bagian 1: Kartu Saldo (Otomatis menjadi 1 kolom di HP, 3 kolom di Laptop) */}
         <div className="w-full">
@@ -48,7 +47,10 @@ export default async function DashboardPage() {
           <OverviewChart data={trendChartData} />
         </div>
 
-        {/* Bagian 3: Daftar Transaksi Terbaru */}
+        {/* Bagian 3: Daftar Transaksi Terbaru.
+            getTransactionByUserId mengembalikan undefined kalau query-nya gagal
+            (blok catch di dalamnya tidak me-return apa pun), jadi nilai baliknya
+            wajib dijaga di sini — itu penyebab crash `data.map` sebelumnya. */}
         <div className="w-full">
           <RecentTransactions data={txData.slice(0, 5)} />
         </div>

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-29T02:18:54.130Z",
+  "timestamp": "2026-07-30T03:12:49.029Z",
   "projectRoot": "c:\\Users\\schvarla\\Documents\\XI-RPL\\Coding\\Arus",
   "structure": {
     "hasPackageJson": true,
@@ -7,5 +7,5 @@
     "hasClaudeConfig": true,
     "hasClaudeFlow": true
   },
-  "scannedAt": 1785291534130
+  "scannedAt": 1785381169029
 }
