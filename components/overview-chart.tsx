@@ -4,12 +4,16 @@ import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
-// Mock data keuangan
-const chartData = [
-    { month: "Jan", income: 4500000, expense: 2400000 },
-    { month: "Feb", income: 5000000, expense: 1800000 },
-    // ... data lainnya
-];
+// Interface
+interface MonthlyTrendData {
+    bulan: string;
+    pemasukan: number;
+    pengeluaran: number;
+}
+
+interface OverviewChartProps {
+    data: MonthlyTrendData[]
+}
 
 // Konfigurasi shadcn/ui
 const chartConfig = {
@@ -17,7 +21,9 @@ const chartConfig = {
     expense: { label: "Pengeluaran", color: "var(--chart-2)" },
 } satisfies ChartConfig;
 
-export function OverviewChart() {
+export function OverviewChart({
+    data
+}: OverviewChartProps) {
     return (
         <Card>
             <CardHeader>
@@ -26,12 +32,12 @@ export function OverviewChart() {
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig} className="h-75 w-full">
-                    <AreaChart data={chartData}>
+                    <AreaChart data={data}>
                         <CartesianGrid vertical={false} />
-                        <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                        <XAxis dataKey="bulan" tickLine={false} axisLine={false} />
                         <ChartTooltip content={<ChartTooltipContent />} /> {/* */}
                         <Area
-                            dataKey="income"
+                            dataKey="pemasukan"
                             type="monotone"
                             fill="var(--chart-1)"         
                             fillOpacity={0.2}      
@@ -39,7 +45,7 @@ export function OverviewChart() {
                             strokeWidth={2}
                         />
                         <Area
-                            dataKey="expense"
+                            dataKey="pengeluaran"
                             type="monotone"
                             fill="var(--chart-2)"
                             fillOpacity={0.2}

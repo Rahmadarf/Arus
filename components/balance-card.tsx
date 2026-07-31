@@ -1,6 +1,13 @@
 import { Card, CardHeader, CardContent, CardDescription, CardTitle } from "./ui/card";
+import { formatRupiah } from "@/lib/format";
 
-export default function BalanceCard() {
+interface BalanceCardProps {
+    balance: number,
+    income: number,
+    expense: number
+}
+
+export default function BalanceCard({ balance, income, expense }: BalanceCardProps) {
     return (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 
@@ -13,7 +20,7 @@ export default function BalanceCard() {
                 </CardHeader>
                 <CardContent>
                     <CardTitle className="text-2xl font-bold text-zinc-900">
-                        Rp 12.500.000
+                        {formatRupiah(balance)}
                     </CardTitle>
                 </CardContent>
             </Card>
@@ -27,7 +34,7 @@ export default function BalanceCard() {
                 </CardHeader>
                 <CardContent>
                     <CardTitle className="text-2xl font-bold text-emerald-600">
-                        + Rp 15.000.000
+                        {formatRupiah(income)}
                     </CardTitle>
                 </CardContent>
             </Card>
@@ -41,7 +48,7 @@ export default function BalanceCard() {
                 </CardHeader>
                 <CardContent>
                     <CardTitle className="text-2xl font-bold text-rose-600">
-                        - Rp 2.500.000
+                        {formatRupiah(expense)}
                     </CardTitle>
                 </CardContent>
             </Card>

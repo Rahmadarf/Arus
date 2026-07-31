@@ -14,10 +14,13 @@ import {
     SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { createTransaction } from "@/app/actions/transaction";
+import { useCategories } from "@/lib/categories/store";
 
 export function AddTransactionModal() {
     const [open, setOpen] = useState(false);
     const [isPending, setIsPending] = useState(false); // UI Indikator Loading
+
+    const { categories, status } = useCategories()
 
     // Perbaikan: Fungsi kirim data asli ke Backend Server Action
     const handleClientAction = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -91,16 +94,40 @@ export function AddTransactionModal() {
                     {/* Input Kategori */}
                     <div className="space-y-2">
                         <Label htmlFor="category" className="text-sm font-medium text-zinc-700">Kategori</Label>
-                        {/* WAJIB: Ditambahkan atribut name */}
-                        <Select name="category" required>
+
+                        {/* 1. KUNCI UTAMA: Tag Select Pembungkus Terluar */}
+                        <Select name="category" required disabled={status === "loading"}>
                             <SelectTrigger id="category" className="rounded-xl border-zinc-200">
-                                <SelectValue placeholder="Pilih kategori..." />
+                                <SelectValue placeholder={status === "loading" ? "Memuat kategori..." : "Pilih kategori..."} />
                             </SelectTrigger>
+
+                            {/* 2. KUNCI KEDUA: Tag SelectContent Pembungkus Dalam */}
                             <SelectContent className="rounded-xl">
-                                <SelectItem value="gaji">Gaji / Pendapatan</SelectItem>
-                                <SelectItem value="makanan">Makanan & Minuman</SelectItem>
-                                <SelectItem value="transportasi">Transportasi</SelectItem>
-                                <SelectItem value="hiburan">Hiburan</SelectItem>
+
+                                {/* Status ketika data kategori kosong */}
+                                {status !== "loading" && categories.length === 0 && (
+                                    <div className="text-xs text-center py-3 text-zinc-400 italic">
+                                        Belum ada kategori. Buat di menu Kategori dahulu!
+                                    </div>
+                                )}
+
+                                {/* 3. PROSES LOOPING: Seluruh SelectItem WAJIB berada di dalam batasan SelectContent */}
+                                {categories.map((cat) => (
+                                    <SelectItem
+                                        key={cat.id}
+                                        value={cat.name}
+                                        className="capitalize cursor-pointer"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span
+                                                className="size-2 rounded-full shrink-0"
+                                                style={{ backgroundColor: cat.color }}
+                                            />
+                                            <span>{cat.name}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+
                             </SelectContent>
                         </Select>
                     </div>

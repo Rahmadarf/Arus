@@ -82,17 +82,17 @@ model Category {
   id           String        @id @default(uuid())
   name         String        
   type         String        // "INCOME" atau "EXPENSE"
+  color        String?       // ✨ BARU: Menyimpan kode warna heksadesimal (misal: #FF5733)
+  icon         String?       // ✨ BARU: Menyimpan string nama ikon dari frontend
   createdAt    DateTime      @default(now())
   
-  // Relasi ke User Better Auth
   userId       String
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Relasi ke Transaksi
   transactions Transaction[] 
 
   @@unique([name, type, userId]) 
 }
+
 
 model Transaction {
   id          String   @id @default(cuid())
