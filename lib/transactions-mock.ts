@@ -1,4 +1,4 @@
-import { getTransactionByUserId } from "@/app/actions/transaction";
+import { getTransactionsPaginated } from "@/app/actions/transaction";
 
 export type TransactionType = "INCOME" | "EXPENSE";
 
@@ -37,36 +37,18 @@ export const categories: Category[] = [
 export async function getTransactions({ search, type, category, page }: TransactionQuery) {
 
   try {
-    const testingUserId = "id-user-testing-rahmad-123";
-
-    const allDbTransaction = await getTransactionByUserId(testingUserId);
-
-    if (!allDbTransaction || allDbTransaction.length === 0) {
-      return { rows: [], total: 0, totalAll: 0 }
-    }
-
-    const keyword = search.trim().toLocaleLowerCase();
-
-    const filtered = allDbTransaction.filter((tx) => {
-      // Filter 1: Kata Kunci Catatan
-      if (keyword && !(tx.description ?? "").toLowerCase().includes(keyword)) return false;
-
-      // Filter 2: Tipe Kas (INCOME/EXPENSE)
-      const currentTxType = tx.type as string;
-      if (type !== "ALL" && currentTxType !== type) return false;
-
-      // Filter 3: Kategori (Mencocokkan nama kategori di DB dengan filter UI)
-      if (category !== "ALL") {
-        const txCategoryName = tx.category.name.toLowerCase().trim();
-        const filterCategoryName = category.toLowerCase().trim();
-        if (txCategoryName !== filterCategoryName) return false;
-      }
-
-      return true;
+    // 🚀 OPTIMASI: Filter + paging dilakukan di SQL melalui helper paginated
+    const { rows: paginatedData, total, totalAll } = await getTransactionsPaginated({
+      search,
+      type,
+      category,
+      page,
+      pageSize: PAGE_SIZE,
     });
 
-    const start = (page - 1) * PAGE_SIZE;
-    const paginatedData = filtered.slice(start, start + PAGE_SIZE);
+    if (!paginatedData || paginatedData.length === 0) {
+      return { rows: [], total, totalAll }
+    }
 
     const rows: Transaction[] = paginatedData.map((tx) => ({
       id: tx.id,
@@ -80,7 +62,7 @@ export async function getTransactions({ search, type, category, page }: Transact
       }
     }));
 
-    return { rows, total: filtered.length, totalAll: allDbTransaction.length };
+    return { rows, total, totalAll };
   } catch (error) {
     console.error("Error fetching transactions", error)
     return { rows: [], total: 0, totalAll: 0 }

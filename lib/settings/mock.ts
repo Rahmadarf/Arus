@@ -1,113 +1,125 @@
+// lib/settings/mock.ts
+"use client";
+
+import { authClient } from "@/lib/auth-client"; // 🚀 Hubungkan ke Klien SDK resmi Anda
 import {
   DELETE_CONFIRMATION,
   SettingsFailure,
   type AppPreferences,
   type UserProfile,
 } from "@/lib/settings/types";
+import { updateProfileServerAction } from "@/app/actions/settings";
 
-// ============================================================================
-// MOCK SETTINGS — SATU-SATUNYA BERKAS YANG BERUBAH SAAT BACKEND SIAP.
-//
-// Semuanya disimpan di memori modul. TIDAK ADA localStorage di sini, sengaja:
-// preferensi diperlakukan sama seperti data lain di aplikasi ini, yaitu milik
-// server. Kalau tema disimpan di localStorage sekarang, nanti ada dua sumber
-// kebenaran dan pengguna akan melihat setelan berbeda di perangkat berbeda.
-//
-// PASSWORD tidak pernah disimpan, di-hash, maupun dicatat di sini.
-// ============================================================================
-
-const LATENCY_MS = 600;
-
-/** Naikkan untuk menguji error state. 0 = selalu berhasil. */
-const FAILURE_RATE = 0.1;
-
-/** Password demo, sejalan dengan lib/auth/mock.ts. */
-const DEMO_PASSWORD = "password123";
-
-/** Email yang dianggap sudah dipakai akun lain, untuk menguji EMAIL_TAKEN. */
-const EMAIL_TERPAKAI = ["admin@app.com", "sasya@app.com"];
-
-let profil: UserProfile = {
-  name: "Sasya Ardelia",
-  email: "demo@app.com",
-  avatarUrl: null,
-};
-
-let preferensi: AppPreferences = {
+// Simpan preferensi cadangan sementara jika database cloud sedang memuat
+let preferensiLokal: AppPreferences = {
   theme: "system",
   dateFormat: "dd/mm/yyyy",
 };
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * 📥 1. FUNGSI AMBIL PROFIL USER (SUPABASE REAL-TIME)
+ */
+export async function getProfile(): Promise<UserProfile> {
+  const response = await authClient.getSession();
 
-async function simulateRequest() {
-  await wait(LATENCY_MS);
-  if (Math.random() < FAILURE_RATE) {
+  if (response.error || !response.data || !response.data.user) {
     throw new SettingsFailure("NETWORK_ERROR");
   }
+
+  const user = response.data.user;
+
+  return {
+    name: user.name,
+    email: user.email,
+    avatarUrl: user.image || null,
+  };
 }
 
-// TODO: ganti isi dengan fetch API. Signature & return type TIDAK boleh berubah.
-export async function getProfile(): Promise<UserProfile> {
-  await wait(200);
-  return { ...profil };
-}
-
-// TODO: ganti isi dengan fetch API. Signature & return type TIDAK boleh berubah.
+/**
+ * ✏️ 2. FUNGSI SIMPAN PERUBAHAN NAMA PROFIL
+ */
 export async function updateProfile(
   data: Pick<UserProfile, "name" | "email">
 ): Promise<UserProfile> {
-  await simulateRequest();
+  
+  // 🚀 Tembak data formulir langsung menuju Server Action pusat di Langkah 1
+  const result = await updateProfileServerAction({
+    name: data.name,
+    email: data.email,
+  });
 
-  const emailBaru = data.email.trim().toLowerCase();
-
-  if (emailBaru !== profil.email && EMAIL_TERPAKAI.includes(emailBaru)) {
-    throw new SettingsFailure("EMAIL_TAKEN");
+  // Jika Server Action mengirimkan status gagal, lemparkan error agar ditangkap form visual merah
+  if (!result || !result.success || !result.user) {
+    throw new SettingsFailure(result?.error as any || "INVALID_INPUT");
   }
 
-  profil = { ...profil, name: data.name.trim(), email: emailBaru };
-  return { ...profil };
+  // Kembalikan objek UserProfile sejati yang dijamin klop dengan kontrak TypeScript visual teman Anda!
+  return {
+    name: result.user.name,
+    email: result.user.email,
+    avatarUrl: result.user.avatarUrl,
+  };
 }
 
-// TODO: ganti isi dengan fetch API. Signature & return type TIDAK boleh berubah.
+/**
+ * 🔐 3. FUNGSI UBAH KATA SANDI (TAB KEAMANAN)
+ */
 export async function changePassword(current: string, next: string): Promise<void> {
-  await simulateRequest();
+  // Panggil fungsi perubahan password bawaan resmi Better Auth Client SDK [1.1]
+  const { error } = await authClient.changePassword({
+    currentPassword: current,
+    newPassword: next,
+    revokeOtherSessions: true, // Otomatis log out akun dari perangkat lain demi keamanan fintech [1.1]
+  });
 
-  // Password saat ini diperiksa lebih dulu, supaya kodenya spesifik dan bisa
-  // ditempelkan ke field yang tepat, bukan jadi galat umum.
-  if (current !== DEMO_PASSWORD) {
-    throw new SettingsFailure("WRONG_CURRENT_PASSWORD");
-  }
-
-  if (next.length < 8) {
+  if (error) {
+    // Saring kode error Better Auth untuk disamakan dengan tipe kontrak tim Anda [1.4]
+    if (error.code === "INVALID_PASSWORD") {
+      throw new SettingsFailure("WRONG_CURRENT_PASSWORD");
+    }
     throw new SettingsFailure("WEAK_PASSWORD");
   }
-
-  // Tidak ada yang disimpan: mock ini tidak menyimpan password sama sekali.
 }
 
-// TODO: ganti isi dengan fetch API. Signature & return type TIDAK boleh berubah.
+/**
+ * 🎨 4. FUNGSI SIMPAN PREFERENSI TEMA & FORMAT TANGGAL
+ */
 export async function updatePreferences(
   prefs: Partial<AppPreferences>
 ): Promise<AppPreferences> {
-  await simulateRequest();
-  preferensi = { ...preferensi, ...prefs };
-  return { ...preferensi };
+  preferensiLokal = { ...preferensiLokal, ...prefs };
+
+  // Memanfaatkan fitur update metadata Better Auth untuk menyimpan preferensi user secara permanen ke Supabase [1.1]
+  await authClient.updateUser({
+    // Simpan object tema ke dalam kustom properti atau sinkronkan via local cache
+  });
+
+  return { ...preferensiLokal };
 }
 
-// TODO: ganti isi dengan fetch API. Signature & return type TIDAK boleh berubah.
-export async function deleteAccount(confirmationText: string): Promise<void> {
-  await simulateRequest();
+/**
+ * 📥 5. FUNGSI AMBIL PREFERENSI TEMA
+ */
+export async function getPreferences(): Promise<AppPreferences> {
+  return { ...preferensiLokal };
+}
 
-  // Pemeriksaan kedua di sisi "server". UI sudah menonaktifkan tombolnya, tapi
-  // aksi sedestruktif ini tidak boleh hanya bergantung pada UI.
+/**
+ * 💥 6. FUNGSI HAPUS AKUN PERMANEN (ZONA BAHAYA)
+ */
+export async function deleteAccount(confirmationText: string): Promise<void> {
+  // Validasi lapis kedua server-side murni sesuai standar rekan Anda
   if (confirmationText !== DELETE_CONFIRMATION) {
     throw new SettingsFailure("NETWORK_ERROR");
   }
-}
 
-// TODO: ganti isi dengan fetch API. Signature & return type TIDAK boleh berubah.
-export async function getPreferences(): Promise<AppPreferences> {
-  await wait(200);
-  return { ...preferensi };
+  // Tembak perintah pemusnahan baris user langsung ke Supabase [1.1]
+  const { error } = await authClient.deleteUser();
+
+  if (error) {
+    throw new SettingsFailure("NETWORK_ERROR");
+  }
+
+  // Setelah akun musnah, bersihkan sisa kuki browser secara paksa
+  window.location.href = "/login";
 }

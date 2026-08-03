@@ -1,28 +1,18 @@
 import BalanceCard from "@/components/balance-card"
 import { OverviewChart } from "@/components/overview-chart"
 import { RecentTransactions } from "@/components/recent-transactions";
-import { getTransactionByUserId } from "@/app/actions/transaction";
+import { getAuthenticatedUserId, getTransactionByUserId } from "@/app/actions/transaction";
 import { getMonthlyTrendData } from "@/app/data/analytics";
 
 export default async function DashboardPage() {
 
-  const testUserId = "id-user-testing-rahmad-123"
+  const userId = await getAuthenticatedUserId()
 
-  const txData = await getTransactionByUserId(testUserId)
-
-  const trendChartData = await getMonthlyTrendData(testUserId)
-  const formattedTransactions = txData.map((tx) => ({
-    id: tx.id,
-    amount: tx.amount,
-    type: tx.type,
-    description: tx.description,
-    createdAt: tx.createdAt,
-    category: {
-      id: tx.category.id,
-      name: tx.category.name,
-      type: tx.category.type,
-    }
-  }));
+  // 🚀 OPTIMASI: Kueri paralel untuk memotong latensi kumulatif
+  const [txData, trendChartData] = await Promise.all([
+    getTransactionByUserId(userId),
+    getMonthlyTrendData(userId),
+  ]);
 
   const totalIncome = txData.filter((tx) => tx.type === "INCOME").reduce((sum, tx) => sum + tx.amount, 0);
   const totalExpense = txData.filter((tx) => tx.type === "EXPENSE").reduce((sum, tx) => sum + tx.amount, 0);

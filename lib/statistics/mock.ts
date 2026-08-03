@@ -1,5 +1,10 @@
+// lib/statistics/mock.ts
+import { cache } from "react";
+import { prisma } from "@/lib/prisma";
 import type { CategoryStat, StatisticsData, TimeRange } from "@/lib/statistics/types";
 import { colorForRank, distributePercentages } from "@/lib/statistics/utils";
+
+const TESTING_USER_ID = "id-user-testing-rahmad-123";
 
 type RawCategory = {
   categoryId: string;
@@ -7,65 +12,39 @@ type RawCategory = {
   total: number;
 };
 
-type RawPeriod = {
-  startDate: string;
-  endDate: string;
-  transactionCount: number;
-  categories: RawCategory[];
-};
+/**
+ * 🛠️ HITUNG RENTANG TANGGAL DINAMIS
+ * Mengonversi label rentang waktu menjadi objek Date awal dan akhir yang siap dipakai kueri Prisma.
+ * @param {TimeRange} range - Label rentang waktu ('this-month', 'last-3-months', 'this-year').
+ * @returns {{startDate: Date, endDate: Date}} Objek tanggal awal dan akhir periode.
+ */
+export function getPeriodDates(range: TimeRange) {
+  const now = new Date();
 
-// Skenario per rentang sengaja dibuat berbeda supaya tiap cabang UI teruji:
-// - this-month    : 6 kategori, satu dominan (~51%)
-// - last-3-months : 12 kategori, menguji peleburan "Lainnya"
-// - this-year     : kosong, menguji empty state
-const PERIODS: Record<TimeRange, RawPeriod> = {
-  "this-month": {
-    startDate: "2026-07-01",
-    endDate: "2026-07-31",
-    transactionCount: 48,
-    categories: [
-      { categoryId: "cat-makanan", categoryName: "Makanan & Minuman", total: 4850000 },
-      { categoryId: "cat-transportasi", categoryName: "Transportasi", total: 1420000 },
-      { categoryId: "cat-belanja", categoryName: "Belanja Rumah", total: 1180000 },
-      { categoryId: "cat-tagihan", categoryName: "Tagihan & Utilitas", total: 980000 },
-      { categoryId: "cat-hiburan", categoryName: "Hiburan", total: 620000 },
-      { categoryId: "cat-kesehatan", categoryName: "Kesehatan", total: 410000 },
-    ],
-  },
+  // Default: awal bulan berjalan sampai akhir bulan berjalan
+  let startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  let endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-  "last-3-months": {
-    startDate: "2026-05-01",
-    endDate: "2026-07-31",
-    transactionCount: 173,
-    categories: [
-      { categoryId: "cat-makanan", categoryName: "Makanan & Minuman", total: 12480000 },
-      { categoryId: "cat-belanja", categoryName: "Belanja Rumah", total: 6350000 },
-      { categoryId: "cat-transportasi", categoryName: "Transportasi", total: 5720000 },
-      { categoryId: "cat-tagihan", categoryName: "Tagihan & Utilitas", total: 4310000 },
-      { categoryId: "cat-cicilan", categoryName: "Cicilan", total: 3900000 },
-      { categoryId: "cat-hiburan", categoryName: "Hiburan", total: 2640000 },
-      { categoryId: "cat-kesehatan", categoryName: "Kesehatan", total: 2180000 },
-      { categoryId: "cat-pendidikan", categoryName: "Pendidikan", total: 1750000 },
-      { categoryId: "cat-perawatan", categoryName: "Perawatan Diri", total: 1290000 },
-      { categoryId: "cat-donasi", categoryName: "Hadiah & Donasi", total: 940000 },
-      { categoryId: "cat-perbaikan", categoryName: "Perbaikan Rumah", total: 780000 },
-      { categoryId: "cat-admin", categoryName: "Biaya Admin Bank", total: 165000 },
-    ],
-  },
+  if (range === "last-3-months") {
+    // Mundur tiga bulan penuh dari bulan berjalan
+    startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1, 0, 0, 0, 0);
+  } else if (range === "this-year") {
+    // 1 Januari sampai 31 Desember tahun berjalan
+    startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+    endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+  }
 
-  "this-year": {
-    startDate: "2026-01-01",
-    endDate: "2026-12-31",
-    transactionCount: 0,
-    categories: [],
-  },
-};
+  return { startDate, endDate };
+}
 
+/**
+ * ✨ RAKIT STATISTIK KATEGORI DARI DATA MENTAH
+ * Mengurutkan kategori berdasarkan total, lalu menambahkan persentase dan warna berdasarkan peringkat.
+ * @param {RawCategory[]} raw - Daftar kategori mentah berisi ID, nama, dan total.
+ * @returns {CategoryStat[]} Daftar kategori siap pakai dengan persentase dan warna.
+ */
 function buildCategoryStats(raw: RawCategory[]): CategoryStat[] {
   const sorted = [...raw].sort((a, b) => b.total - a.total);
-
-  // Persentase dihitung sekali di sini dengan largest remainder, jadi komponen
-  // tidak perlu tahu-menahu soal pembulatan.
   const percentages = distributePercentages(sorted.map((item) => item.total));
 
   return sorted.map((item, index) => ({
@@ -76,32 +55,88 @@ function buildCategoryStats(raw: RawCategory[]): CategoryStat[] {
 }
 
 /**
- * Batas periode adalah turunan dari rentang yang dipilih, bukan dari hasil
- * query. Dipisah supaya label "1 – 31 Juli 2026" bisa tampil seketika tanpa
- * menunggu data — dan tetap satu sumber kebenaran dengan getStatistics().
+ * 📥 AMBIL DATA STATISTIK PENGELUARAN PENGGUNA
+ * Mengambil transaksi pengeluaran dari database, mengelompokkannya per kategori, dan merangkum totalnya.
+ * @param {TimeRange} range - Rentang waktu analisis statistik.
+ * @returns {Promise<StatisticsData>} Rangkuman statistik pengeluaran untuk rentang waktu tertentu.
  */
-export function getPeriodDates(range: TimeRange) {
-  const { startDate, endDate } = PERIODS[range];
-  return { startDate, endDate };
-}
+// 🚀 OPTIMASI: cache() mencegah hitung ganda untuk rentang yang sama dalam satu request
+export const getStatistics = cache(async (range: TimeRange): Promise<StatisticsData> => {
+  try {
+    // Dapatkan tanggal awal dan akhir periode
+    const { startDate, endDate } = getPeriodDates(range);
 
-// ============================================================================
-// TODO: ganti isi fungsi ini dengan fetch API.
-// Signature dan return type TIDAK boleh berubah.
-// ============================================================================
-export async function getStatistics(range: TimeRange): Promise<StatisticsData> {
-  // Delay artifisial supaya loading state benar-benar teruji.
-  await new Promise((resolve) => setTimeout(resolve, 600));
+    const baseWhere = {
+      userId: String(TESTING_USER_ID),
+      type: "EXPENSE" as const,
+      createdAt: {
+        gte: startDate,
+        lte: endDate,
+      },
+    };
 
-  const period = PERIODS[range];
-  const categories = buildCategoryStats(period.categories);
+    // 🚀 OPTIMASI: Agregasi total di DB lewat groupBy + aggregate paralel
+    const [grouped, aggregate] = await Promise.all([
+      prisma.transaction.groupBy({
+        by: ["categoryId"],
+        where: baseWhere,
+        _sum: { amount: true },
+        _count: { _all: true },
+      }),
+      prisma.transaction.aggregate({
+        where: baseWhere,
+        _sum: { amount: true },
+        _count: { _all: true },
+      }),
+    ]);
 
-  return {
-    range,
-    startDate: period.startDate,
-    endDate: period.endDate,
-    totalExpense: categories.reduce((sum, item) => sum + item.total, 0),
-    transactionCount: period.transactionCount,
-    categories,
-  };
-}
+    // Jika tidak ada pengeluaran pada periode terpilih
+    if (grouped.length === 0) {
+      return {
+        range,
+        startDate: startDate.toISOString().split("T")[0],
+        endDate: endDate.toISOString().split("T")[0],
+        totalExpense: 0,
+        transactionCount: 0,
+        categories: [],
+      };
+    }
+
+    // Ambil hanya nama kategori untuk label (bukan seluruh kolom)
+    const categoryIds = grouped.map((g) => g.categoryId);
+    const categoryNames = await prisma.category.findMany({
+      where: { id: { in: categoryIds } },
+      select: { id: true, name: true },
+    });
+    const nameMap = new Map(categoryNames.map((c) => [c.id, c.name]));
+
+    const rawCategories: RawCategory[] = grouped.map((g) => ({
+      categoryId: g.categoryId,
+      categoryName: nameMap.get(g.categoryId) ?? "Tanpa Nama",
+      total: g._sum.amount ?? 0,
+    }));
+
+    // Bangun struktur kategori dengan persentase dan warna
+    const categories = buildCategoryStats(rawCategories);
+
+    return {
+      range,
+      // Format tanggal menjadi string "YYYY-MM-DD" untuk label UI
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
+      totalExpense: aggregate._sum.amount ?? 0,
+      transactionCount: aggregate._count._all,
+      categories,
+    };
+  } catch (error) {
+    console.error("Gagal memproses getStatistics database riil:", error);
+    return {
+      range,
+      startDate: "",
+      endDate: "",
+      totalExpense: 0,
+      transactionCount: 0,
+      categories: [],
+    };
+  }
+});

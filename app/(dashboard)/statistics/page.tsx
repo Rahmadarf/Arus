@@ -21,7 +21,12 @@ export default async function StatisticsPage({
   const range = parseTimeRange(params.range);
 
   const { startDate, endDate } = getPeriodDates(range);
-  const periodLabel = formatRentangTanggal(startDate, endDate);
+
+  const startDateStr = startDate.toISOString().split("T")[0]; // Mengubah ke string "YYYY-MM-DD"
+  const endDateStr = endDate.toISOString().split("T")[0];     // Mengubah ke string "YYYY-MM-DD"
+
+  // Kirim variabel string baru ke fungsi label teman Anda
+  const periodLabel = formatRentangTanggal(startDateStr, endDateStr);
 
   return (
     <div className="space-y-6">

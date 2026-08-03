@@ -1,184 +1,160 @@
-import {
-  AuthFailure,
-  SESSION_COOKIE,
-  type Session,
-  type User,
-} from "@/lib/auth/types";
+// lib/auth/mock.ts
+"use client"; // Wajib klien agar kuki otomatis ditulis oleh browser
 
-// ============================================================================
-// MOCK AUTH — SATU-SATUNYA BERKAS YANG BERUBAH SAAT BACKEND SIAP.
-//
-// ATURAN PENYIMPANAN SESSION:
-// Session ditiru lewat cookie bernama 'session', BUKAN localStorage atau
-// sessionStorage. Alasannya dua:
-//
-// 1. localStorage bisa dibaca skrip mana pun di halaman — satu celah XSS
-//    berarti token dicuri. Cookie httpOnly asli nanti tidak bisa dibaca JS.
-// 2. Kalau sekarang memakai localStorage, saat backend siap kita bukan cuma
-//    mengganti sumber data, tapi juga mengganti model keamanan — termasuk
-//    proxy.ts, yang membaca cookie dan tidak bisa melihat localStorage.
-//
-// Cookie di sini non-httpOnly karena ditulis dari JS. Saat backend siap,
-// SERVER yang menuliskannya dengan httpOnly + secure + sameSite, dan seluruh
-// baris document.cookie di bawah ini dihapus.
-//
-// PASSWORD tidak pernah disimpan, di-cache, maupun dicatat di mana pun.
-// ============================================================================
+import { AuthFailure, type Session } from "@/lib/auth/types";
 
-const LATENCY_MS = 800;
-
-/** Naikkan untuk menguji error state. 0 = selalu berhasil. */
-const FAILURE_RATE = 0.1;
-
-const SESSION_TTL_HOURS = 24;
-
-// HAPUS sebelum production — akun demo khusus fase mock.
-export const DEMO_EMAIL = "demo@app.com";
+export const DEMO_EMAIL = "rahmad@arus.com";
 export const DEMO_PASSWORD = "password123";
 
-const DEMO_USER: User = {
-  id: "usr-demo",
-  name: "Sasya Ardelia",
-  email: DEMO_EMAIL,
-  createdAt: "2026-01-12T04:00:00.000Z",
-};
-
-/** Akun yang dibuat lewat register selama sesi browser ini. */
-const registered = new Map<string, User>([[DEMO_EMAIL, DEMO_USER]]);
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function simulateRequest() {
-  await wait(LATENCY_MS);
-  if (Math.random() < FAILURE_RATE) {
-    throw new AuthFailure("NETWORK_ERROR");
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Cookie helper. Nilainya dummy — bukan JWT, dan tidak boleh dianggap bukti
-// apa pun. Backend nanti yang menerbitkan token asli.
-// ---------------------------------------------------------------------------
-
-function writeSessionCookie(session: Session, remember: boolean) {
-  const parts = [
-    `${SESSION_COOKIE}=mock-${session.user.id}`,
-    "Path=/",
-    "SameSite=Lax",
-  ];
-
-  // "Ingat saya" tidak dicentang -> cookie sesi, hilang saat browser ditutup.
-  if (remember) parts.push(`Expires=${new Date(session.expiresAt).toUTCString()}`);
-
-  document.cookie = parts.join("; ");
-}
-
-function clearSessionCookie() {
-  document.cookie = `${SESSION_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
-}
-
-function hasSessionCookie() {
-  return document.cookie
-    .split("; ")
-    .some((entry) => entry.startsWith(`${SESSION_COOKIE}=`) && entry.length > SESSION_COOKIE.length + 1);
-}
-
-function buildSession(user: User): Session {
-  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 3600_000).toISOString();
-  return { user, expiresAt };
-}
-
 /**
- * Pengguna aktif disimpan di memori modul, bukan di storage apa pun. Cookie
- * hanya menandakan "ada session"; isinya dipulihkan dari sini. Setelah backend
- * siap, ini diganti panggilan GET /auth/me.
+ * 🚀 MASUK AKUN MELALUI FETCH API
+ * Mengirimkan kredensial masuk ke endpoint internal Better Auth dan mengelola sesi otomatis via kuki browser.
+ * @param {string} email - Alamat surel pengguna.
+ * @param {string} password - Kata sandi pengguna.
+ * @param {boolean} [remember=false] - Bendera mengingat sesi setelah browser ditutup.
+ * @returns {Promise<Session>} Objek sesi yang berhasil dibuat.
+ * @throws {AuthFailure} Jika kredensial ditolak oleh server.
  */
-let currentUser: User | null = null;
+export async function login(email: string, password: string, remember = false): Promise<Session> {
+  // Panggil endpoint Better Auth untuk masuk
+  const response = await fetch("/api/auth/sign-in/email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: email.toLowerCase().trim(),
+      password: password,
+      dontRememberSession: !remember,
+    }),
+  });
 
-// ---------------------------------------------------------------------------
+  const result = await response.json();
 
-// TODO: ganti isi dengan fetch API. Signature & return type TIDAK boleh berubah.
-export async function login(
-  email: string,
-  password: string,
-  remember = false
-): Promise<Session> {
-  await simulateRequest();
-
-  const user = registered.get(email.trim().toLowerCase());
-
-  // Password salah dan email tidak terdaftar mengembalikan kode yang sama,
-  // supaya tidak bisa dipakai menebak email mana yang punya akun.
-  if (!user || password !== DEMO_PASSWORD) {
+  // Tolak respons jika kredensial tidak valid
+  if (!response.ok || !result || result.error) {
     throw new AuthFailure("INVALID_CREDENTIALS");
   }
 
-  const session = buildSession(user);
-  currentUser = user;
-  writeSessionCookie(session, remember);
-  return session;
+  // Kuki sesi otomatis tertanam di browser oleh Better Auth
+  return {
+    user: {
+      id: result.user.id,
+      name: result.user.name,
+      email: result.user.email,
+      createdAt: result.user.createdAt,
+    },
+    expiresAt: new Date(Date.now() + 24 * 3600_000).toISOString(),
+  };
 }
 
-// TODO: ganti isi dengan fetch API. Signature & return type TIDAK boleh berubah.
-export async function register(
-  name: string,
-  email: string,
-  password: string
-): Promise<Session> {
-  await simulateRequest();
+/**
+ * ➕ PENDAFTARAN AKUN MELALUI FETCH API
+ * Mendaftarkan akun baru dan menginisiasi sesi otomatis setelah registrasi berhasil.
+ * @param {string} name - Nama lengkap pengguna.
+ * @param {string} email - Alamat surel baru.
+ * @param {string} password - Kata sandi untuk akun baru.
+ * @returns {Promise<Session>} Objek sesi pengguna yang baru terdaftar.
+ * @throws {AuthFailure} Jika surel sudah terpakai atau proses gagal.
+ */
+export async function register(name: string, email: string, password: string): Promise<Session> {
+  const response = await fetch("/api/auth/sign-up/email", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: email.toLowerCase().trim(),
+      password: password,
+      name: name.trim(),
+    }),
+  });
 
-  const normalized = email.trim().toLowerCase();
-  if (registered.has(normalized)) {
+  const result = await response.json();
+
+  if (!response.ok || !result || result.error) {
     throw new AuthFailure("EMAIL_TAKEN");
   }
 
-  // `password` sengaja tidak dipakai selain sebagai penanda bahwa field ini
-  // ada di kontrak. Tidak disimpan, tidak di-hash di klien, tidak dicatat.
-  void password;
-
-  const user: User = {
-    id: `usr-${Date.now().toString(36)}`,
-    name: name.trim(),
-    email: normalized,
-    createdAt: new Date().toISOString(),
+  return {
+    user: {
+      id: result.user.id,
+      name: result.user.name,
+      email: result.user.email,
+      createdAt: result.user.createdAt,
+    },
+    expiresAt: new Date(Date.now() + 24 * 3600_000).toISOString(),
   };
-
-  registered.set(normalized, user);
-
-  const session = buildSession(user);
-  currentUser = user;
-  writeSessionCookie(session, true);
-  return session;
 }
 
-// TODO: ganti isi dengan fetch API. Signature & return type TIDAK boleh berubah.
-export async function logout(): Promise<void> {
-  await wait(200);
-  currentUser = null;
-  clearSessionCookie();
-}
-
-// TODO: ganti isi dengan fetch API. Signature & return type TIDAK boleh berubah.
+/**
+ * 📥 AMBIL SESI AKTIF MELALUI FETCH API
+ * Memeriksa apakah kuki sesi masih berlaku dan mengembalikan data pengguna, atau null bila tidak ada.
+ * @returns {Promise<Session | null>} Objek sesi aktif atau null jika tidak terautentikasi.
+ */
 export async function getSession(): Promise<Session | null> {
-  await wait(150);
+  try {
+    const response = await fetch("/api/auth/get-session");
 
-  if (!hasSessionCookie()) {
-    currentUser = null;
+    if (!response.ok) return null;
+
+    const result = await response.json();
+    if (!result || !result.user) return null;
+
+    return {
+      user: {
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        createdAt: result.user.createdAt,
+      },
+      expiresAt: result.session.expiresAt,
+    };
+  } catch (error) {
+    console.error("Gagal menarik getSession API:", error);
     return null;
   }
-
-  // Cookie ada tapi memori modul kosong (mis. setelah refresh penuh) — pulihkan
-  // ke akun demo. Setelah backend siap, GET /auth/me yang menjawab ini.
-  if (!currentUser) currentUser = DEMO_USER;
-
-  return buildSession(currentUser);
 }
 
-// TODO: ganti isi dengan fetch API. Signature & return type TIDAK boleh berubah.
-export async function requestPasswordReset(email: string): Promise<void> {
-  await simulateRequest();
+/**
+ * 🗑️ KELUAR AKUN MELALUI FETCH API
+ * Menghancurkan sesi di server dengan mengirim kuki HttpOnly, lalu membersihkan status autentikasi pada SDK klien.
+ * @returns {Promise<void>} Tidak mengembalikan nilai.
+ */
+export async function logout(): Promise<void> {
+  try {
+    // Panggil endpoint resmi Better Auth untuk menghapus kuki
+    await fetch("/api/auth/sign-out", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      // Sertakan kredensial agar kuki HttpOnly dikirim untuk dihancurkan
+      credentials: "include"
+    });
 
-  // Sengaja tidak memeriksa apakah email terdaftar, dan tidak melempar
-  // USER_NOT_FOUND. Pemanggilnya selalu menampilkan pesan sukses yang sama.
-  void email;
+    // Bersihkan sisa status pada SDK klien
+    const { authClient } = await import("@/lib/auth-client");
+    await authClient.signOut();
+
+  } catch (error) {
+    console.error("Gagal logout API:", error);
+  }
+}
+
+/**
+ * 📥 MINTA RESET KATA SANDI MELALUI FETCH API
+ * Mengirimkan permintaan pengaturan ulang kata sandi ke alamat surel pengguna.
+ * @param {string} email - Alamat surel yang meminta reset.
+ * @returns {Promise<void>} Tidak mengembalikan nilai.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  try {
+    await fetch("/api/auth/forget-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email.toLowerCase().trim(),
+        redirectTo: "/reset-password",
+      }),
+    });
+  } catch (error) {
+    console.error(error);
+  }
 }

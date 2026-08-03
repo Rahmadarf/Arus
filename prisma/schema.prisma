@@ -97,17 +97,16 @@ model Category {
 model Transaction {
   id          String   @id @default(cuid())
   amount      Float
-  type        String   // "INCOME" atau "EXPENSE"
+  type        String   
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relasi ke User Better Auth
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relasi ke Category
   categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  // ✨ PERBAIKAN: Ganti 'onDelete: Cascade' menjadi 'onDelete: Restrict'
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 }
 

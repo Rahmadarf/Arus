@@ -1,11 +1,10 @@
+// app/actions/category.ts
 "use server"
 
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { clean } from "better-auth/react";
 import { revalidatePath } from "next/cache";
-import { success } from "zod";
-
-const testUserId = "id-user-testing-rahmad-123";
+import { headers } from "next/headers";
 
 interface CategoryInput {
     name: string,
@@ -14,22 +13,47 @@ interface CategoryInput {
     icon?: string
 }
 
+/**
+ * 🔐 AMBIL ID PENGGUNA DARI SESI AKTIF (HTTP-ONLY COOKIE)
+ * Mengambil identitas asli pengguna yang sedang login untuk dipakai sebagai filter keamanan di setiap kueri.
+ * @returns {Promise<string>} ID pengguna yang terautentikasi.
+ * @throws {Error} Jika sesi tidak valid atau pengguna belum login.
+ */
+export async function getAuthenticatedUserId() {
+    const sessionData = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!sessionData || !sessionData.user) {
+        throw new Error("Unauthorized: Silakan login kembali.")
+    }
+
+    return sessionData.user.id
+}
+
+/**
+ * ➕ TAMBAH KATEGORI BARU
+ * Membuat kategori baru milik pengguna aktif setelah memastikan tidak ada nama duplikat.
+ * @param {CategoryInput} input - Data kategori baru (nama, tipe, warna, ikon).
+ * @returns {Promise<{success: boolean, data?: any, error?: string}>} Status operasi beserta data kategori atau pesan kesalahan.
+ */
 export async function createCategoriesByUserId(input: CategoryInput) {
     try {
+        const cleanName = input.name.toLowerCase().trim();
+        const dbType = input.type.toUpperCase() as "INCOME" | "EXPENSE";
 
-        const cleanName = input.name.toLocaleLowerCase().trim();
-        const dbType = input.type.toLocaleUpperCase() as "INCOME" | "EXPENSE";
+        const userId = await getAuthenticatedUserId()
 
         const existing = await prisma.category.findFirst({
-            where:{
+            where: {
                 name: cleanName,
                 type: dbType,
-                userId: testUserId
+                userId: userId
             }
         })
 
         if (existing) {
-            return { success: false, error: "Category already created!" }
+            return { success: false, error: "Kategori tersebut sudah pernah dibuat!" }
         }
 
         const created = await prisma.category.create({
@@ -37,31 +61,39 @@ export async function createCategoriesByUserId(input: CategoryInput) {
                 name: cleanName,
                 type: dbType,
                 color: input.color,
-                icon: input.icon,
-                userId: testUserId
+                icon: input.icon || null,
+                userId: userId
             }
         })
 
         revalidatePath('/categories');
         return { success: true, data: created }
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error creating category", e);
-        return { succes: false, error: "An internal error occurred on the database server."}
+        return { success: false, error: e.message || "Terjadi kesalahan internal pada server database." }
     }
 }
 
-
+/**
+ * ✏️ UBAH KATEGORI
+ * Memperbarui nama, warna, dan ikon kategori berdasarkan ID dengan validasi kepemilikan pengguna.
+ * @param {string} id - ID kategori yang akan diperbarui.
+ * @param {CategoryInput} input - Data kategori terbaru.
+ * @returns {Promise<{success: boolean, data?: any, error?: string}>} Status operasi beserta data kategori yang diperbarui.
+ */
 export async function updateCategory(id: string, input: CategoryInput) {
     try {
-        
-        const dbType = input.type.toLocaleUpperCase() as "INCOME" | "EXPENSE"
+        const userId = await getAuthenticatedUserId()
 
         const updated = await prisma.category.update({
-            where: { id },
+            where: {
+                id,
+                userId // Filter pemilik: hanya pemilik asli yang bisa mengubah
+            },
             data: {
-                name: input.name.toLocaleLowerCase().trim(),
+                name: input.name.toLowerCase().trim(),
                 color: input.color,
-                icon: input.icon,
+                icon: input.icon || null,
             }
         })
 
@@ -69,55 +101,84 @@ export async function updateCategory(id: string, input: CategoryInput) {
         return { success: true, data: updated }
     } catch (e) {
         console.error("Error updating category", e);
-        return { success: false, error: "Internal server error" }
+        return { success: false, error: "Gagal memperbarui data kategori." }
     }
 }
 
-
+/**
+ * 📥 AMBIL DAFTAR KATEGORI MILIK PENGGUNA AKTIF
+ * Mengambil seluruh kategori yang dimiliki pengguna login, diurutkan berdasarkan nama.
+ * @returns {Promise<{success: boolean, data?: any[], error?: string}>} Status operasi beserta daftar kategori.
+ */
 export async function getCategoriesById() {
     try {
+        const userId = await getAuthenticatedUserId()
         const dbCategories = await prisma.category.findMany({
             where: {
-                userId: testUserId
+                userId: userId // Filter eksklusif milik akun aktif
             },
             orderBy: {
                 name: 'asc'
+            },
+            select: {
+                id: true,
+                name: true,
+                type: true,
+                color: true,
+                icon: true,
+                _count: {
+                    select: {
+                        transactions: true
+                    }
+                }
             }
         })
 
         return { success: true, data: dbCategories }
     } catch (e) {
         console.error('Error get categories', e);
-        return { success: false, error: 'Internal server error' }
+        return { success: false, error: 'Gagal mengambil data dari database.' }
     }
 }
 
-
+/**
+ * 🔄 PINDAHKAN TRANSAKSI & HAPUS KATEGORI
+ * Memindahkan seluruh transaksi dari kategori asal ke kategori tujuan, lalu menghapus kategori asal dalam satu transaksi atomik.
+ * @param {string} fromId - ID kategori asal yang akan dihapus.
+ * @param {string} toId - ID kategori tujuan penerima transaksi.
+ * @returns {Promise<{success: boolean, error?: string}>} Status operasi.
+ */
 export async function reassignAndDeleteCategory(fromId: string, toId: string) {
     try {
         if (!fromId || !toId) {
-            return { success: false, error: "Category ID is required" }
+            return { success: false, error: "ID Kategori wajib diisi!" }
         }
 
         if (fromId === toId) {
-            return { success: false, error: "Category to be moved and moved to must be different" }
+            return { success: false, error: "Kategori asal dan tujuan tidak boleh sama!" }
         }
 
-        await prisma.$transaction(async (tx) => {
+        // Validasi sesi aktif untuk keamanan berlapis
+        const userId = await getAuthenticatedUserId()
 
-            // Langkah A: Alihkan semua baris transaksi ke ID kategori tujuan yang baru
+        await prisma.$transaction(async (tx) => {
+            // Langkah A: Alihkan transaksi ke kategori tujuan
             await tx.transaction.updateMany({
                 where: {
-                    categoryId: fromId
+                    categoryId: fromId,
+                    userId: userId // Kunci keamanan finansial
                 },
                 data: {
                     categoryId: toId
                 }
             })
 
-            // Langkah B: Hapus kategori lama yang sekarang posisinya sudah kosong murni
+            // Langkah B: Hapus kategori lama yang kini kosong
             await tx.category.delete({
-                where: { id: fromId }
+                where: {
+                    id: fromId,
+                    userId: userId
+                }
             })
         })
 
@@ -126,20 +187,29 @@ export async function reassignAndDeleteCategory(fromId: string, toId: string) {
         return { success: true }
     } catch (e) {
         console.error("Error reassign and delete category", e);
-        return { success: false, error: "Internal server error" }
+        return { success: false, error: "Gagal memproses pengalihan data transaksi keuangan." }
     }
 }
 
-
-export async function deleteCategory(id: string) {
+/**
+ * 🗑️ HAPUS KATEGORI KOSONG LANGSUNG
+ * Menghapus kategori yang tidak lagi memiliki transaksi milik pengguna aktif.
+ * @param {string} id - ID kategori yang akan dihapus.
+ * @returns {Promise<{success: boolean, error?: string}>} Status operasi.
+ */
+export async function deleteCategoryAction(id: string) {
     try {
         if (!id) {
-            return { success: false, error: "Category ID is required" }
+            return { success: false, error: "ID Kategori wajib diisi!" }
         }
+
+        // Proteksi: pastikan pengguna hanya menghapus miliknya sendiri
+        const userId = await getAuthenticatedUserId()
 
         await prisma.category.delete({
             where: {
-                id
+                id,
+                userId // Cegah manipulasi ID lintas akun
             }
         })
 
@@ -149,6 +219,6 @@ export async function deleteCategory(id: string) {
         return { success: true }
     } catch (e) {
         console.error("Error deleting category", e);
-        return { success: false, error: "Internal server error" }
+        return { success: false, error: "Gagal menghapus kategori dari database." }
     }
 }

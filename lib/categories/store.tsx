@@ -6,16 +6,12 @@ import { toast } from "sonner";
 import { SEED_CATEGORIES } from "@/lib/categories/seed";
 import type { Category, CategoryInput, CategoryType } from "@/lib/categories/types";
 
-import { createCategoriesByUserId, getCategoriesById, reassignAndDeleteCategory, deleteCategory } from "@/app/actions/category";
+import { createCategoriesByUserId, getCategoriesById, reassignAndDeleteCategory, deleteCategoryAction } from "@/app/actions/category";
 
 const testUserId = "id-user-testing-rahmad-123";
 
 // ============================================================================
-// LAPISAN DATA — SATU-SATUNYA TITIK YANG BERUBAH SAAT BACKEND SIAP.
-//
-// Kelima fungsi di bawah meniru bentuk panggilan HTTP: async, bisa gagal,
-// menerima dan mengembalikan tipe domain. Komponen tidak tahu-menahu apakah
-// datanya datang dari array di memori atau dari server.
+// LAPISAN DATA — Pemanggil server actions dengan kontrak respons yang seragam.
 // ============================================================================
 
 /** Naikkan untuk menguji error state. 0 = selalu berhasil. */
@@ -41,7 +37,11 @@ async function simulateRequest(failureRate: number) {
   }
 }
 
-// TODO: ganti isi dengan fetch API. Signature dan return type TIDAK boleh berubah.
+/**
+ * 📥 AMBIL DAFTAR KATEGORI MILIK PENGGUNA AKTIF
+ * Mengambil seluruh kategori pengguna dan memetakan struktur database menjadi tipe domain UI.
+ * @returns {Promise<Category[]>} Daftar kategori siap pakai untuk komponen UI.
+ */
 export async function getCategories(): Promise<Category[]> {
 
   try {
@@ -57,7 +57,7 @@ export async function getCategories(): Promise<Category[]> {
       type: cat.type.toLowerCase() as CategoryType,
       color: cat.color || "A1A1AA",
       icon: cat.icon || undefined,
-      transactionCount: 0,
+      transactionCount: cat._count.transactions,
       isDefault: false
     }))
   } catch (e) {
@@ -66,13 +66,20 @@ export async function getCategories(): Promise<Category[]> {
   }
 }
 
+/**
+ * ➕ BUAT KATEGORI BARU
+ * Membuat kategori baru melalui server action dan mengembalikan data domain kategori.
+ * @param {any} input - Data kategori baru (nama, tipe, warna, ikon).
+ * @returns {Promise<Category>} Kategori yang berhasil dibuat.
+ * @throws {Error} Jika server action mengembalikan status gagal.
+ */
 export async function createCategories(input: any): Promise<Category> {
   const result = await createCategoriesByUserId(input)
 
   if (!result.success) {
     throw new Error(result.error || "Gagal membuat kategori")
   }
-  
+
   return {
     id: result.data?.id as string,
     name: result.data?.name as string,
@@ -82,52 +89,40 @@ export async function createCategories(input: any): Promise<Category> {
     transactionCount: 0,
     isDefault: false
   }
-  
+
 }
 
-// TODO: ganti isi dengan fetch API. Signature dan return type TIDAK boleh berubah.
+/**
+ * ✏️ PERBARUI KATEGORI (TIRUAN SEMENTARA)
+ * Mensimulasikan pembaruan kategori dengan latensi dan kemungkinan kegagalan acak.
+ * Tipe tidak ikut diubah: memindahkan kategori antar tipe akan membuat
+ * transaksi pengeluaran tercatat sebagai pemasukan.
+ * @param {string} id - ID kategori yang akan diperbarui.
+ * @param {CategoryInput} input - Data kategori terbaru.
+ * @returns {Promise<Category>} Kategori yang telah diperbarui.
+ * @throws {Error} Jika kategori tidak ditemukan atau simulasi jaringan gagal.
+ */
 export async function updateCategory(id: string, input: CategoryInput): Promise<Category> {
   await simulateRequest(MUTATION_FAILURE_RATE);
 
   const index = db.findIndex((item) => item.id === id);
   if (index === -1) throw new Error("Kategori tidak ditemukan");
 
-  // Tipe tidak ikut diubah: memindahkan kategori antar tipe akan membuat
-  // transaksi pengeluaran tercatat sebagai pemasukan.
   const updated: Category = { ...db[index], name: input.name, color: input.color, icon: input.icon };
   db = db.map((item) => (item.id === id ? updated : item));
   return { ...updated };
 }
 
-export async function deleteCategoryById(id: string): Promise<void> {
-  if (!id) {
-    throw new Error("Category ID is required")
-  }
-
-  const result = await deleteCategory(id)
-
-  if (!result.success) {
-    throw new Error(result.error || "Failed to delete category")
-  }
-
-  
-}
-
 /**
- * Pindahkan seluruh transaksi milik `fromId` ke `toId`, lalu hapus `fromId`.
- *
- * KEPUTUSAN DESAIN: menghapus kategori tidak boleh menghapus transaksi.
- * Riwayat keuangan adalah catatan yang dibuat pengguna selama berbulan-bulan;
- * satu klik di halaman pengaturan tidak boleh memusnahkannya. Karena itu tidak
- * ada jalur "hapus beserta isinya" — satu-satunya cara menghapus kategori yang
- * masih terpakai adalah memindahkan isinya lebih dulu.
- *
- * Di backend, kedua langkah ini WAJIB satu transaksi database. Kalau UPDATE
- * berhasil tapi DELETE gagal, transaksi pengguna sudah terlanjur pindah.
+ * 🔄 PINDAHKAN TRANSAKSI DAN HAPUS KATEGORI
+ * Memindahkan seluruh transaksi dari kategori asal ke kategori tujuan, lalu menghapus kategori asal.
+ * @param {string} fromId - ID kategori asal yang akan dihapus.
+ * @param {string} toId - ID kategori tujuan penerima transaksi.
+ * @returns {Promise<void>} Tidak mengembalikan nilai saat sukses.
+ * @throws {Error} Jika proses pengalihan gagal di server.
  */
-// TODO: ganti isi dengan fetch API. Signature dan return type TIDAK boleh berubah.
 export async function reassignAndDelete(fromId: string, toId: string): Promise<void> {
-  
+
   const result = await reassignAndDeleteCategory(fromId, toId);
 
   if (!result.success) {
@@ -135,9 +130,26 @@ export async function reassignAndDelete(fromId: string, toId: string): Promise<v
   }
 }
 
+/**
+ * 🗑️ HAPUS KATEGORI KOSONG
+ * Menghapus kategori yang sudah tidak memiliki transaksi melalui server action.
+ * @param {string} id - ID kategori yang akan dihapus.
+ * @returns {Promise<void>} Tidak mengembalikan nilai saat sukses.
+ * @throws {Error} Jika server action mengembalikan status gagal.
+ */
+export async function deleteCategory(id: string): Promise<void> {
+  const result = await deleteCategoryAction(id);
+
+  // Lemparkan kesalahan agar store dapat melakukan rollback
+  if (!result.success) {
+    throw new Error(result.error || "Gagal menghapus kategori");
+  }
+
+  // Sukses: fungsi selesai tanpa mengembalikan objek
+}
+
 // ============================================================================
-// STORE — Context + useReducer. Satu state dipakai bersama seluruh halaman,
-// jadi tabel, dialog, dan tab tidak mungkin desinkron.
+// STORE — Context + useReducer untuk menyatukan status seluruh halaman.
 // ============================================================================
 
 type Status = "loading" | "ready" | "error";
@@ -153,7 +165,11 @@ type Action =
   | { type: "load-success"; items: Category[] }
   | { type: "load-error"; error: string }
   /** Dipakai untuk pembaruan optimistis sekaligus rollback-nya. */
-  | { type: "set-items"; items: Category[] };
+  | { type: "set-items"; items: Category[] }
+  /** 🚀 OPTIMASI: patch granular — hanya baris yang berubah yang di-render ulang */
+  | { type: "patch-item"; id: string; changes: Partial<Category> }
+  /** 🚀 OPTIMASI: hapus satu ID tanpa rebuild seluruh array */
+  | { type: "remove-item"; id: string };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -165,6 +181,18 @@ function reducer(state: State, action: Action): State {
       return { ...state, status: "error", error: action.error };
     case "set-items":
       return { ...state, items: action.items };
+    case "patch-item":
+      return {
+        ...state,
+        items: state.items.map((item) =>
+          item.id === action.id ? { ...item, ...action.changes } : item
+        ),
+      };
+    case "remove-item":
+      return {
+        ...state,
+        items: state.items.filter((item) => item.id !== action.id),
+      };
   }
 }
 
@@ -191,10 +219,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
     error: null,
   });
 
-  // Dibaca di dalam aksi tanpa memasukkan `items` ke dependency, supaya
-  // fungsi-fungsi aksi tidak dibuat ulang setiap kali daftar berubah.
-  // Disinkronkan lewat effect, bukan saat render — menulis ref selama render
-  // membuat hasilnya tidak bisa diandalkan.
+  // Ref sinkron agar aksi tidak perlu memasukkan items ke dependency
   const itemsRef = useRef(state.items);
   useEffect(() => {
     itemsRef.current = state.items;
@@ -207,13 +232,25 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       .catch((error) => dispatch({ type: "load-error", error: errorMessage(error) }));
   }, []);
 
+  // ��� OPTIMASI: Race-condition guard agar dispatch tidak terjadi setelah unmount
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    let dibatalkan = false;
+    dispatch({ type: "load-start" });
+    getCategories()
+      .then((items) => {
+        if (!dibatalkan) dispatch({ type: "load-success", items });
+      })
+      .catch((error) => {
+        if (!dibatalkan) dispatch({ type: "load-error", error: errorMessage(error) });
+      });
+    return () => {
+      dibatalkan = true;
+    };
+  }, []);
 
   /**
-   * Pola optimistis yang dipakai semua mutasi: simpan snapshot, tampilkan
-   * hasil yang diharapkan lebih dulu, lalu kembalikan snapshot kalau gagal.
+   * Pola optimistis: simpan snapshot, tampilkan hasil lebih dulu,
+   * lalu kembalikan snapshot bila gagal.
    */
   const runOptimistic = useCallback(
     async (
@@ -240,7 +277,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
   const create = useCallback(
     (input: CategoryInput) => {
-      // Id sementara diganti id asli begitu "server" menjawab.
+      // ID sementara diganti ID asli saat server menjawab
       const optimistic: Category = {
         ...input,
         id: `tmp-${Date.now()}`,
@@ -276,33 +313,43 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
   );
 
   const remove = useCallback(
-    (id: string) => {
+    async (id: string): Promise<boolean> => {
+      // Ambil snapshot nama untuk teks notifikasi sukses
       const target = itemsRef.current.find((item) => item.id === id);
 
+      // Jalankan pembaruan optimistis dengan server action penghapusan
       return runOptimistic(
+        // Skenario sukses: tabel langsung menyaring keluar ID
         itemsRef.current.filter((item) => item.id !== id),
-        () => deleteCategoryById(id),
-        `Kategori "${target?.name ?? ""}" dihapus`
+
+        // Panggil server action penghapusan kategori
+        () => deleteCategory(id),
+
+        `Kategori "${target?.name ?? ""}" berhasil dihapus`
       );
     },
     [runOptimistic]
   );
 
   const reassignAndRemove = useCallback(
-    (fromId: string, toId: string) => {
+    async (fromId: string, toId: string): Promise<boolean> => {
       const from = itemsRef.current.find((item) => item.id === fromId);
-      const moved = from?.transactionCount ?? 0;
+      const to = itemsRef.current.find((item) => item.id === toId);
+      const movedCount = from?.transactionCount ?? 0;
 
+      // Jalankan pembaruan optimistis dengan transaksi berantai Prisma
       return runOptimistic(
+        // Skenario sukses: hapus kategori lama dan tambahkan jumlah transaksi ke kategori baru
         itemsRef.current
           .filter((item) => item.id !== fromId)
           .map((item) =>
-            item.id === toId
-              ? { ...item, transactionCount: item.transactionCount + moved }
-              : item
+            item.id === toId ? { ...item, transactionCount: item.transactionCount + movedCount } : item
           ),
+
+        // Panggil server action transaksi berantai
         () => reassignAndDelete(fromId, toId),
-        `${moved} transaksi dipindahkan, kategori "${from?.name ?? ""}" dihapus`
+
+        `Berhasil memindahkan ${movedCount} transaksi ke "${to?.name ?? ""}"`
       );
     },
     [runOptimistic]

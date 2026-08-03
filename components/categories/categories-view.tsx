@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, Tags, TriangleAlert } from "lucide-react";
 
@@ -22,6 +22,16 @@ export function CategoriesView({ type }: { type: CategoryType }) {
   const [editing, setEditing] = useState<Category | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState<Category | null>(null);
+
+  // 🚀 OPTIMASI: Filter dijalankan sekali per perubahan store, bukan dua kali per render
+  const incomeItems = useMemo(
+    () => categories.filter((item) => item.type === "income"),
+    [categories]
+  );
+  const expenseItems = useMemo(
+    () => categories.filter((item) => item.type === "expense"),
+    [categories]
+  );
 
   // Tab aktif hidup di URL, bukan state lokal — sama seperti filter di
   // /transactions dan rentang waktu di /statistics, jadi tautannya bisa
@@ -51,23 +61,23 @@ export function CategoriesView({ type }: { type: CategoryType }) {
     node.focus();
   };
 
-  const openCreate = () => {
+  const openCreate = useCallback(() => {
     ingatPemicu();
     setEditing(null);
     setFormOpen(true);
-  };
+  }, []);
 
-  const openEdit = (category: Category) => {
+  const openEdit = useCallback((category: Category) => {
     ingatPemicu();
     setEditing(category);
     setFormOpen(true);
-  };
+  }, []);
 
-  const openDelete = (category: Category) => {
+  const openDelete = useCallback((category: Category) => {
     ingatPemicu();
     setDeleting(category);
     setDeleteOpen(true);
-  };
+  }, []);
 
   const renderBody = (tabType: CategoryType) => {
     if (status === "loading") return <CategoriesTableSkeleton />;
@@ -87,7 +97,7 @@ export function CategoriesView({ type }: { type: CategoryType }) {
       );
     }
 
-    const rows = categories.filter((item) => item.type === tabType);
+    const rows = tabType === "income" ? incomeItems : expenseItems;
 
     if (rows.length > 0) {
       return <CategoriesTable categories={rows} onEdit={openEdit} onDelete={openDelete} />;

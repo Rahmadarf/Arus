@@ -1,3 +1,4 @@
+// components/statistics/statistics-content.tsx
 import Link from "next/link";
 import { PieChart } from "lucide-react";
 
@@ -5,15 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CategoryTable } from "@/components/statistics/category-table";
 import { ExpenseDonutChart } from "@/components/statistics/expense-donut-chart";
-import { getStatistics } from "@/lib/statistics/mock";
 import { buildChartSlices } from "@/lib/statistics/utils";
 import type { TimeRange } from "@/lib/statistics/types";
 
+import { getStatistics } from "@/lib/statistics/mock";
+
+/**
+ * 🚀 KONTEN UTAMA HALAMAN STATISTIK
+ * Server component yang merangkum data pengeluaran pengguna menjadi kartu grafik dan tabel kategori.
+ * @param {{range: TimeRange}} props - Rentang waktu aktif yang dipilih pengguna.
+ * @returns {Promise<JSX.Element>} Komponen statistik utama atau empty state bila tidak ada data.
+ */
 export async function StatisticsContent({ range }: { range: TimeRange }) {
+
+  // Tarik rangkuman data pengeluaran dari database
   const data = await getStatistics(range);
 
-  // Tanpa pengeluaran, persentase tidak bisa dihitung — tampilkan ajakan
-  // bertindak, bukan donat kosong atau NaN%.
+  // Tampilkan ajakan bertindak bila tidak ada pengeluaran pada periode ini
   if (data.totalExpense === 0 || data.categories.length === 0) {
     return (
       <Card className="rounded-2xl border-zinc-200 shadow-sm w-full">
@@ -35,6 +44,7 @@ export async function StatisticsContent({ range }: { range: TimeRange }) {
     );
   }
 
+  // Susun irisan grafik donat dengan peleburan kategori kecil
   const slices = buildChartSlices(data.categories);
   const adaPeleburan = slices.length !== data.categories.length;
 
@@ -65,8 +75,6 @@ export async function StatisticsContent({ range }: { range: TimeRange }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Tabel memuat semua kategori tanpa peleburan — chart untuk gambaran
-              besar, tabel untuk detail sekaligus alternatif non-visual. */}
           <CategoryTable categories={data.categories} />
         </CardContent>
       </Card>

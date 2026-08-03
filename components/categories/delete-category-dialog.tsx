@@ -77,12 +77,26 @@ export function DeleteCategoryDialog({
 
   const handleConfirm = async () => {
     setIsPending(true);
-    const ok = terpakai
-      ? await reassignAndRemove(category.id, targetId)
-      : await remove(category.id);
-    setIsPending(false);
 
-    if (ok) onOpenChange(false);
+    try {
+      if (terpakai) {
+        // Menjalankan fungsi pindah transaksi & hapus kategori berantai
+        await reassignAndRemove(category.id, targetId);
+      } else {
+        // Menjalankan fungsi hapus kategori kosong secara langsung
+        await remove(category.id);
+      }
+
+      // Jika baris di atas berjalan lancar tanpa melempar error (throw),
+      // artinya mutasi database Supabase sukses murni! Langsung tutup modal otomatis.
+      onOpenChange(false);
+    } catch (error) {
+      // Jika Supabase mendeteksi kegagalan (misal: aturan database Restrict memblokir aksi)
+      console.error("Gagal mengeksekusi penghapusan kategori:", error);
+      // Dialog tidak akan menutup, sehingga pengguna tetap bisa melihat form
+    } finally {
+      setIsPending(false); // Matikan indikator loading spinner animasi
+    }
   };
 
   return (

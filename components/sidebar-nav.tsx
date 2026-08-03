@@ -22,7 +22,6 @@ import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/budget", label: "Budget", icon: Wallet },
   { href: "/statistics", label: "Statistics", icon: BarChart3 },
   { href: "/transactions", label: "Transactions", icon: ArrowUpRight },
   { href: "/categories", label: "Categories", icon: Tags },

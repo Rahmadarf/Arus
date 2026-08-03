@@ -1,7 +1,6 @@
 import { CategoriesView } from "@/components/categories/categories-view";
 import { CategoriesProvider } from "@/lib/categories/store";
 import { parseCategoryType } from "@/lib/categories/types";
-import { getCategoriesById } from "@/app/data/category";
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 

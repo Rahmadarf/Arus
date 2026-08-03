@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import {
   Table,
   TableBody,
@@ -12,6 +14,57 @@ import type { CategoryStat } from "@/lib/statistics/types";
 type Props = {
   categories: CategoryStat[];
 };
+
+type RowProps = {
+  category: CategoryStat;
+  index: number;
+};
+
+/**
+ * 🚀 OPTIMASI: Baris dibungkus memo agar perubahan pada satu kategori
+ * tidak memicu render ulang baris lain di tabel besar.
+ */
+const StatCategoryRow = memo(function StatCategoryRow({ category, index }: RowProps) {
+  return (
+    <TableRow className="hover:bg-zinc-50/50 transition-colors">
+      <TableCell className="hidden text-sm text-zinc-400 tabular-nums sm:table-cell">
+        #{index + 1}
+      </TableCell>
+
+      <TableCell className="w-full min-w-0">
+        <div className="flex items-center gap-2">
+          {/* Titik warna sengaja sama persis dengan potongan di donat. */}
+          <span
+            className="size-2.5 shrink-0 rounded-full"
+            style={{ backgroundColor: category.color }}
+          />
+          <span className="truncate text-sm font-medium text-zinc-700">
+            {category.categoryName}
+          </span>
+        </div>
+
+        {/* Bar tipis: lebarnya = persentase, bikin "terboros" langsung terbaca. */}
+        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-zinc-100">
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${category.percentage}%`,
+              backgroundColor: category.color,
+            }}
+          />
+        </div>
+      </TableCell>
+
+      <TableCell className="text-right text-sm font-semibold text-rose-600 tabular-nums">
+        {formatRupiah(category.total)}
+      </TableCell>
+
+      <TableCell className="text-right text-sm text-zinc-500 tabular-nums">
+        {category.percentage}%
+      </TableCell>
+    </TableRow>
+  );
+});
 
 export function CategoryTable({ categories }: Props) {
   return (
@@ -34,43 +87,11 @@ export function CategoryTable({ categories }: Props) {
         </TableHeader>
         <TableBody>
           {categories.map((category, index) => (
-            <TableRow key={category.categoryId} className="hover:bg-zinc-50/50 transition-colors">
-              <TableCell className="hidden text-sm text-zinc-400 tabular-nums sm:table-cell">
-                #{index + 1}
-              </TableCell>
-
-              <TableCell className="w-full min-w-0">
-                <div className="flex items-center gap-2">
-                  {/* Titik warna sengaja sama persis dengan potongan di donat. */}
-                  <span
-                    className="size-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  <span className="truncate text-sm font-medium text-zinc-700">
-                    {category.categoryName}
-                  </span>
-                </div>
-
-                {/* Bar tipis: lebarnya = persentase, bikin "terboros" langsung terbaca. */}
-                <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-zinc-100">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${category.percentage}%`,
-                      backgroundColor: category.color,
-                    }}
-                  />
-                </div>
-              </TableCell>
-
-              <TableCell className="text-right text-sm font-semibold text-rose-600 tabular-nums">
-                {formatRupiah(category.total)}
-              </TableCell>
-
-              <TableCell className="text-right text-sm text-zinc-500 tabular-nums">
-                {category.percentage}%
-              </TableCell>
-            </TableRow>
+            <StatCategoryRow
+              key={category.categoryId}
+              category={category}
+              index={index}
+            />
           ))}
         </TableBody>
       </Table>

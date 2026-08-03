@@ -54,7 +54,7 @@ export function authErrorMessage(error: unknown): string {
 }
 
 /** Nama cookie session milik jalur mock (lib/auth/mock.ts). */
-export const SESSION_COOKIE = "session";
+export const SESSION_COOKIE = "better-auth.session_token";
 
 /**
  * Semua nama cookie yang menandakan ada session.
