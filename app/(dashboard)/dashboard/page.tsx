@@ -14,8 +14,8 @@ export default async function DashboardPage() {
     getMonthlyTrendData(userId),
   ]);
 
-  const totalIncome = txData.filter((tx) => tx.type === "INCOME").reduce((sum, tx) => sum + tx.amount, 0);
-  const totalExpense = txData.filter((tx) => tx.type === "EXPENSE").reduce((sum, tx) => sum + tx.amount, 0);
+  const totalIncome = txData.filter((tx: any) => tx.type === "INCOME").reduce((sum, tx) => sum + tx.amount, 0);
+  const totalExpense = txData.filter((tx: any) => tx.type === "EXPENSE").reduce((sum, tx) => sum + tx.amount, 0);
   const totalBalance = totalIncome - totalExpense;
 
   return (
