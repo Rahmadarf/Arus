@@ -43,16 +43,16 @@ const TRANSAKSI = [
   { tanggal: "2026-07-21", kategori: "Makanan", catatan: "Kopi dan cemilan", nominal: 75000, masuk: false },
 ];
 
-const TOTAL_PENGELUARAN = KATEGORI.reduce((jumlah, item) => jumlah + item.nominal, 0);
+const TOTAL_PENGELUARAN = KATEGORI.reduce((jumlah: number, item: { nominal: number }) => jumlah + item.nominal, 0);
 
 /**
  * Titik mulai setiap potongan donat, dihitung sekali saat modul dimuat.
  * Sengaja tidak diakumulasi di dalam map saat render — mutasi selama render
  * membuat hasilnya bergantung pada urutan render.
  */
-const SEGMEN = KATEGORI.map((item, index) => ({
+const SEGMEN = KATEGORI.map((item: { nominal: number; persen: number; nama: string; warna: string }, index: number) => ({
   ...item,
-  mulai: KATEGORI.slice(0, index).reduce((jumlah, s) => jumlah + s.persen, 0),
+  mulai: KATEGORI.slice(0, index).reduce((jumlah: number, s: { persen: number }) => jumlah + s.persen, 0),
 }));
 
 /**

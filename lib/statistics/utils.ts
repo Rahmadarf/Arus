@@ -37,13 +37,13 @@ export function colorForRank(index: number): string {
 export function distributePercentages(values: number[]): number[] {
   if (values.length === 0) return [];
 
-  const total = values.reduce((sum, value) => sum + value, 0);
+  const total = values.reduce((sum: number, value: number) => sum + value, 0);
   if (total <= 0) return values.map(() => 0);
 
   const exact = values.map((value) => (value / total) * 100);
   const result = exact.map(Math.floor);
 
-  let leftover = 100 - result.reduce((sum, value) => sum + value, 0);
+  let leftover = 100 - result.reduce((sum: number, value: number) => sum + value, 0);
 
   // Pecahan terbesar dilayani duluan. Kalau seri, indeks lebih kecil menang
   // supaya hasilnya deterministik.
@@ -86,12 +86,12 @@ export function buildChartSlices(
 
   if (rest.length === 0) return slices;
 
-  const rankedPercentage = ranked.reduce((sum, item) => sum + item.percentage, 0);
+  const rankedPercentage = ranked.reduce((sum: number, item: { percentage: number }) => sum + item.percentage, 0);
 
   slices.push({
     key: "lainnya",
     name: `Lainnya (${rest.length} kategori)`,
-    value: rest.reduce((sum, item) => sum + item.total, 0),
+    value: rest.reduce((sum: number, item: { total: number }) => sum + item.total, 0),
     percentage: 100 - rankedPercentage,
     color: MUTED_COLOR,
   });
