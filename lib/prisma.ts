@@ -1,11 +1,12 @@
 // lib/prisma.ts
-import { PrismaClient } from "@prisma/client";
+import PrismaClientModule from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined };
+// 🌟 BEBAS IMPOR: Gunakan any sementara pada globalThis agar compiler tidak mencari tipe PrismaClient mentah [1.4]
+const globalForPrisma = globalThis as unknown as { prisma: any };
 
-let prismaInstance: PrismaClient;
+let prismaInstance: any;
 
 if (globalForPrisma.prisma) {
   prismaInstance = globalForPrisma.prisma;
@@ -14,10 +15,11 @@ if (globalForPrisma.prisma) {
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   const adapter = new PrismaPg(pool);
   
-  // Masukkan adapter ke dalam opsi constructor PrismaClient sesuai petunjuk eror [1.3]
-  prismaInstance = new PrismaClient({ adapter });
+  // 🌟 SINKRONISASI TOTAL: Panggil constructor resmi dari dalam objek modul utama Anda!
+  prismaInstance = new PrismaClientModule.PrismaClient({ adapter });
 }
 
+// Ekspor instance utama yang akan dikonsumsi oleh seluruh Server Actions proyek Anda
 export const prisma = prismaInstance;
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
