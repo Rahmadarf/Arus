@@ -1,9 +1,9 @@
 // lib/prisma.ts
-import PrismaClientModule from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
-// 🌟 BEBAS IMPOR: Gunakan any sementara pada globalThis agar compiler tidak mencari tipe PrismaClient mentah [1.4]
+// Gunakan any agar compiler global tidak protes saat proses build produksi Vercel berjalan
 const globalForPrisma = globalThis as unknown as { prisma: any };
 
 let prismaInstance: any;
@@ -15,11 +15,10 @@ if (globalForPrisma.prisma) {
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   const adapter = new PrismaPg(pool);
   
-  // 🌟 SINKRONISASI TOTAL: Panggil constructor resmi dari dalam objek modul utama Anda!
-  prismaInstance = new PrismaClientModule.PrismaClient({ adapter });
+  // 🌟 PANGGIL CONSTRUCTOR RESMI: Named export ini adalah satu-satunya standar resmi Prisma
+  prismaInstance = new PrismaClient({ adapter });
 }
 
-// Ekspor instance utama yang akan dikonsumsi oleh seluruh Server Actions proyek Anda
 export const prisma = prismaInstance;
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
