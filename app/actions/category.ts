@@ -1,6 +1,8 @@
 // app/actions/category.ts
 "use server"
 
+import { Prisma } from "@prisma/client";
+
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -99,7 +101,7 @@ export async function updateCategory(id: string, input: CategoryInput) {
 
         revalidatePath('/categories')
         return { success: true, data: updated }
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error updating category", e);
         return { success: false, error: "Gagal memperbarui data kategori." }
     }
@@ -135,7 +137,7 @@ export async function getCategoriesById() {
         })
 
         return { success: true, data: dbCategories }
-    } catch (e) {
+    } catch (e: any) {
         console.error('Error get categories', e);
         return { success: false, error: 'Gagal mengambil data dari database.' }
     }
@@ -161,7 +163,7 @@ export async function reassignAndDeleteCategory(fromId: string, toId: string) {
         // Validasi sesi aktif untuk keamanan berlapis
         const userId = await getAuthenticatedUserId()
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // Langkah A: Alihkan transaksi ke kategori tujuan
             await tx.transaction.updateMany({
                 where: {
@@ -185,7 +187,7 @@ export async function reassignAndDeleteCategory(fromId: string, toId: string) {
         revalidatePath('/categories');
         revalidatePath('/')
         return { success: true }
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error reassign and delete category", e);
         return { success: false, error: "Gagal memproses pengalihan data transaksi keuangan." }
     }
@@ -217,7 +219,7 @@ export async function deleteCategoryAction(id: string) {
         revalidatePath('/')
 
         return { success: true }
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error deleting category", e);
         return { success: false, error: "Gagal menghapus kategori dari database." }
     }

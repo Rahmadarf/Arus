@@ -63,7 +63,7 @@ export async function getStatisticData({ userId, startDate, endDate }: GetStatsA
             totalTransaksiCount: expenseTransactions.length,
             categoriesRank: sortedCategories 
         }
-    } catch (e) {
+    } catch (e: any) {
         console.error("Failed to process statistic")
         return {
             totalPengeluaran: 0,

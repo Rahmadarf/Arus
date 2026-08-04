@@ -36,7 +36,7 @@ export async function getMonthlyTrendData(userId: string) {
 
         return Object.values(chartDataMap)
 
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error fetching analytics data:", e);
         return [];
     }
