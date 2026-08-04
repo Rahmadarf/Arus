@@ -45,9 +45,9 @@ export function getPeriodDates(range: TimeRange) {
  */
 function buildCategoryStats(raw: RawCategory[]): CategoryStat[] {
   const sorted = [...raw].sort((a, b) => b.total - a.total);
-  const percentages = distributePercentages(sorted.map((item) => item.total));
+  const percentages = distributePercentages(sorted.map((item: RawCategory) => item.total));
 
-  return sorted.map((item, index) => ({
+  return sorted.map((item: RawCategory, index: number) => ({
     ...item,
     percentage: percentages[index],
     color: colorForRank(index),
@@ -128,7 +128,7 @@ export const getStatistics = cache(async (range: TimeRange): Promise<StatisticsD
       transactionCount: aggregate._count._all,
       categories,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gagal memproses getStatistics database riil:", error);
     return {
       range,

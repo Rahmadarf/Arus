@@ -44,7 +44,7 @@ export async function updateProfileServerAction(input: UpdateProfileInput) {
         avatarUrl: null, // Default null sesuai kontrak tipe
       },
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gagal memproses updateProfile di server action:", error);
     return { success: false, error: "NETWORK_ERROR" };
   }

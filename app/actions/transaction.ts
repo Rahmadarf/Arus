@@ -92,7 +92,7 @@ export async function createTransaction(formData: FormData) {
     revalidatePath("/");
 
     return { success: true }
-  } catch (e) {
+  } catch (e: any) {
     console.error("Error Backend Transaction", e);
     return { success: false, error: "An internal error occurred on the database server." }
   }
@@ -121,7 +121,7 @@ export async function getTransactionByUserId(userId: string) {
       }
     })
     return transaction
-  } catch (e) {
+  } catch (e: any) {
     console.error("Error fetching transaction", e)
     return [];
   }
@@ -147,7 +147,7 @@ export async function deleteTransaction(transactionId: string) {
     revalidatePath('/transaction');
 
     return { ok: true }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error deleting transaction", error)
     return { ok: false, message: "Internal server error" }
   }
@@ -209,7 +209,7 @@ export async function getTransactionsPaginated({
     ]);
 
     return { rows, total, totalAll };
-  } catch (e) {
+  } catch (e: any) {
     console.error("Error fetching transactions paginated", e);
     return { rows: [], total: 0, totalAll: 0 };
   }
