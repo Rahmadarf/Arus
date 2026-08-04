@@ -1,7 +1,6 @@
 // app/actions/category.ts
 "use server"
 
-import * as PrismaClient from "@prisma/client";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -163,7 +162,7 @@ export async function reassignAndDeleteCategory(fromId: string, toId: string) {
         // Validasi sesi aktif untuk keamanan berlapis
         const userId = await getAuthenticatedUserId()
 
-        await prisma.$transaction(async (tx: PrismaClient.Prisma.TransactionClient) => {
+        await prisma.$transaction(async (tx: any) => {
             // Langkah A: Alihkan transaksi ke kategori tujuan
             await tx.transaction.updateMany({
                 where: {
