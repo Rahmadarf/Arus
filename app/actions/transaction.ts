@@ -180,7 +180,7 @@ export async function getTransactionsPaginated({
   try {
     const userId = await getAuthenticatedUserId();
 
-    const where: any = { userId };
+    const where: string = { userId };
     if (search.trim()) {
       where.description = { contains: search.trim(), mode: "insensitive" };
     }
