@@ -45,9 +45,9 @@ export function getPeriodDates(range: TimeRange) {
  */
 function buildCategoryStats(raw: RawCategory[]): CategoryStat[] {
   const sorted = [...raw].sort((a, b) => b.total - a.total);
-  const percentages = distributePercentages(sorted.map((item) => item.total));
+  const percentages = distributePercentages(sorted.map((item: RawCategory) => item.total));
 
-  return sorted.map((item, index) => ({
+  return sorted.map((item: RawCategory, index: number) => ({
     ...item,
     percentage: percentages[index],
     color: colorForRank(index),
@@ -103,14 +103,14 @@ export const getStatistics = cache(async (range: TimeRange): Promise<StatisticsD
     }
 
     // Ambil hanya nama kategori untuk label (bukan seluruh kolom)
-    const categoryIds = grouped.map((g) => g.categoryId);
+    const categoryIds = grouped.map((g: any) => g.categoryId);
     const categoryNames = await prisma.category.findMany({
       where: { id: { in: categoryIds } },
       select: { id: true, name: true },
     });
-    const nameMap = new Map(categoryNames.map((c) => [c.id, c.name]));
+    const nameMap = new Map(categoryNames.map((c: any) => [c.id, c.name]));
 
-    const rawCategories: RawCategory[] = grouped.map((g) => ({
+    const rawCategories: RawCategory[] = grouped.map((g: any) => ({
       categoryId: g.categoryId,
       categoryName: nameMap.get(g.categoryId) ?? "Tanpa Nama",
       total: g._sum.amount ?? 0,
@@ -128,7 +128,7 @@ export const getStatistics = cache(async (range: TimeRange): Promise<StatisticsD
       transactionCount: aggregate._count._all,
       categories,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gagal memproses getStatistics database riil:", error);
     return {
       range,

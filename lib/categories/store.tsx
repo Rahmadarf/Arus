@@ -51,7 +51,7 @@ export async function getCategories(): Promise<Category[]> {
       return []
     }
 
-    return result.data.map((cat) => ({
+    return result.data.map((cat: any) => ({
       id: cat.id,
       name: cat.name,
       type: cat.type.toLowerCase() as CategoryType,

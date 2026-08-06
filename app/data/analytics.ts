@@ -17,12 +17,12 @@ export async function getMonthlyTrendData(userId: string) {
 
         // 2. Wadah kosong untuk 12 bulan [jan - des]
         const namaBulan = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-        const chartDataMap = namaBulan.reduce((acc, bulan) => {
+        const chartDataMap = namaBulan.reduce((acc: Record<string, { bulan: string; pemasukan: number; pengeluaran: number }>, bulan) => {
             acc[bulan] = { bulan, pemasukan: 0, pengeluaran: 0 }
             return acc
         }, {} as Record<string, { bulan: string; pemasukan: number; pengeluaran: number }>)
 
-        transactions.forEach((tx) => {
+        transactions.forEach((tx: { amount: number; type: string; createdAt: Date }) => {
             const date = new Date(tx.createdAt)
             const bulanSesuai = namaBulan[date.getMonth()]
 
@@ -36,7 +36,7 @@ export async function getMonthlyTrendData(userId: string) {
 
         return Object.values(chartDataMap)
 
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error fetching analytics data:", e);
         return [];
     }

@@ -23,7 +23,7 @@ export async function getStatisticData({ userId, startDate, endDate }: GetStatsA
             }
         })
 
-        const totalPengeluaran = expenseTransactions.reduce((sum, tx) => sum + tx.amount, 0)
+        const totalPengeluaran = expenseTransactions.reduce((sum: number, tx: { amount: number }) => sum + tx.amount, 0)
 
         const categoryMap: Record<string, {
             id: string,
@@ -33,7 +33,7 @@ export async function getStatisticData({ userId, startDate, endDate }: GetStatsA
             count: number
         }> = {};
 
-        expenseTransactions.forEach((tx) => {
+        expenseTransactions.forEach((tx: { amount: number; categoryId: string; category: { name: string; color: string | null } }) => {
             const catId = tx.categoryId;
             if (!categoryMap[catId]) {
                 categoryMap[catId] = {
@@ -63,7 +63,7 @@ export async function getStatisticData({ userId, startDate, endDate }: GetStatsA
             totalTransaksiCount: expenseTransactions.length,
             categoriesRank: sortedCategories 
         }
-    } catch (e) {
+    } catch (e: any) {
         console.error("Failed to process statistic")
         return {
             totalPengeluaran: 0,

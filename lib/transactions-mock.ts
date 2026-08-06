@@ -50,7 +50,7 @@ export async function getTransactions({ search, type, category, page }: Transact
       return { rows: [], total, totalAll }
     }
 
-    const rows: Transaction[] = paginatedData.map((tx) => ({
+    const rows: Transaction[] = paginatedData.map((tx: any) => ({
       id: tx.id,
       date: new Date(tx.createdAt).toISOString().split('T')[0],
       note: tx.description,
@@ -63,7 +63,7 @@ export async function getTransactions({ search, type, category, page }: Transact
     }));
 
     return { rows, total, totalAll };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching transactions", error)
     return { rows: [], total: 0, totalAll: 0 }
   }
