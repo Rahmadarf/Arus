@@ -1,10 +1,76 @@
 // lib/auth/mock.ts
 "use client"; // Wajib klien agar kuki otomatis ditulis oleh browser
 
-import { AuthFailure, type Session } from "@/lib/auth/types";
+import { AuthFailure, type AuthError, type Session, type User } from "@/lib/auth/types";
 
 export const DEMO_EMAIL = "rahmad@arus.com";
 export const DEMO_PASSWORD = "password123";
+
+/** Bentuk balasan sukses dari endpoint sign-in/sign-up Better Auth. */
+type AuthResponseBody = {
+  error?: unknown;
+  user: Pick<User, "id" | "name" | "email" | "createdAt">;
+};
+
+/**
+ * Panggil endpoint auth dan kembalikan body-nya sebagai objek.
+ *
+ * Dulu setiap pemanggil langsung melakukan `await response.json()`. Saat rute
+ * /api/auth balas 500 dengan badan kosong — persis yang terjadi ketika koneksi
+ * database putus — `json()` melempar SyntaxError, error itu lolos sebagai
+ * "bukan AuthFailure", dan form menampilkan "Gagal terhubung ke server" untuk
+ * masalah yang sebenarnya ada di server. Di sini status HTTP dipetakan lebih
+ * dulu supaya pesannya jujur.
+ *
+ * @param path - Jalur endpoint di bawah /api/auth.
+ * @param init - Opsi fetch tambahan.
+ * @param kegagalanKlien - Kode yang dipakai saat server menolak dengan 4xx.
+ */
+async function requestAuth(
+  path: string,
+  init: RequestInit,
+  kegagalanKlien: AuthError
+): Promise<AuthResponseBody> {
+  let response: Response;
+
+  try {
+    response = await fetch(`/api/auth/${path}`, {
+      ...init,
+      credentials: "include",
+    });
+  } catch {
+    // Hanya di sini koneksi benar-benar tidak sampai ke server.
+    throw new AuthFailure("NETWORK_ERROR");
+  }
+
+  const teks = await response.text();
+
+  let body: Partial<AuthResponseBody> | null = null;
+  try {
+    body = teks ? (JSON.parse(teks) as Partial<AuthResponseBody>) : null;
+  } catch {
+    body = null;
+  }
+
+  if (response.status === 429) {
+    throw new AuthFailure("RATE_LIMITED");
+  }
+
+  if (response.status >= 500) {
+    // Badan 500 sering kosong; log mentahnya supaya penyebab asli tetap terlihat
+    // di devtools alih-alih hilang di balik pesan ramah.
+    console.error(`[auth] ${path} balas ${response.status}:`, teks || "(kosong)");
+    throw new AuthFailure("SERVER_ERROR");
+  }
+
+  // `user` ikut dijaga di sini, bukan di masing-masing pemanggil: balasan 200
+  // tanpa user berarti kontraknya berubah, dan itu bukan kesalahan pengguna.
+  if (!response.ok || !body || body.error || !body.user) {
+    throw new AuthFailure(kegagalanKlien);
+  }
+
+  return { ...body, user: body.user };
+}
 
 /**
  * 🚀 MASUK AKUN MELALUI FETCH API
@@ -17,22 +83,19 @@ export const DEMO_PASSWORD = "password123";
  */
 export async function login(email: string, password: string, remember = false): Promise<Session> {
   // Panggil endpoint Better Auth untuk masuk
-  const response = await fetch("/api/auth/sign-in/email", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email: email.toLowerCase().trim(),
-      password: password,
-      dontRememberSession: !remember,
-    }),
-  });
-
-  const result = await response.json();
-
-  // Tolak respons jika kredensial tidak valid
-  if (!response.ok || !result || result.error) {
-    throw new AuthFailure("INVALID_CREDENTIALS");
-  }
+  const result = await requestAuth(
+    "sign-in/email",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email.toLowerCase().trim(),
+        password: password,
+        dontRememberSession: !remember,
+      }),
+    },
+    "INVALID_CREDENTIALS"
+  );
 
   // Kuki sesi otomatis tertanam di browser oleh Better Auth
   return {
@@ -56,21 +119,19 @@ export async function login(email: string, password: string, remember = false): 
  * @throws {AuthFailure} Jika surel sudah terpakai atau proses gagal.
  */
 export async function register(name: string, email: string, password: string): Promise<Session> {
-  const response = await fetch("/api/auth/sign-up/email", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email: email.toLowerCase().trim(),
-      password: password,
-      name: name.trim(),
-    }),
-  });
-
-  const result = await response.json();
-
-  if (!response.ok || !result || result.error) {
-    throw new AuthFailure("EMAIL_TAKEN");
-  }
+  const result = await requestAuth(
+    "sign-up/email",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email.toLowerCase().trim(),
+        password: password,
+        name: name.trim(),
+      }),
+    },
+    "EMAIL_TAKEN"
+  );
 
   return {
     user: {

@@ -16,6 +16,7 @@ export type AuthError =
   | "EMAIL_TAKEN"
   | "USER_NOT_FOUND"
   | "RATE_LIMITED"
+  | "SERVER_ERROR"
   | "NETWORK_ERROR";
 
 /**
@@ -45,6 +46,10 @@ export const AUTH_ERROR_MESSAGE: Record<AuthError, string> = {
   EMAIL_TAKEN: "Email ini sudah terdaftar. Coba masuk saja.",
   USER_NOT_FOUND: "Akun tidak ditemukan.",
   RATE_LIMITED: "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.",
+  // Dibedakan dari NETWORK_ERROR: yang ini berarti server menjawab tapi gagal
+  // memproses. Menyuruh pengguna "periksa koneksi Anda" saat masalahnya ada di
+  // server hanya membuat mereka mencabut router tanpa hasil.
+  SERVER_ERROR: "Server sedang bermasalah. Coba lagi sebentar lagi.",
   NETWORK_ERROR: "Gagal terhubung ke server. Periksa koneksi Anda.",
 };
 
