@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { safeCallbackUrl } from "@/lib/auth/callback-url";
-import { DEMO_EMAIL, DEMO_PASSWORD, login } from "@/lib/auth/mock";
+import { login } from "@/lib/auth/mock";
 import { authErrorMessage } from "@/lib/auth/types";
 
 const schema = z.object({
@@ -153,16 +153,6 @@ export function LoginForm() {
             </Link>
           </p>
         </form>
-
-        {/* HAPUS sebelum production — petunjuk akun demo khusus fase mock. */}
-        <div className="mt-5 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/70 px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-            Akun demo
-          </p>
-          <p className="mt-1 font-mono text-sm text-zinc-600">
-            {DEMO_EMAIL} / {DEMO_PASSWORD}
-          </p>
-        </div>
       </CardContent>
     </Card>
   );

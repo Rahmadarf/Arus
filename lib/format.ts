@@ -8,6 +8,37 @@ export const formatRupiah = (value: number) => {
   }).format(value);
 };
 
+/**
+ * Versi ringkas untuk label sumbu grafik: "Rp 350jt", "Rp 1,2jt", "Rp 500rb".
+ *
+ * Sumbu Y tidak muat menampung "Rp 347.921.733" dikali enam tick — angkanya
+ * akan saling tumpang tindih atau memakan lebar plot. Nilai penuhnya tetap
+ * terbaca di tooltip, jadi tidak ada informasi yang hilang.
+ */
+export const formatRupiahRingkas = (value: number) => {
+  const negatif = value < 0;
+  const n = Math.abs(value);
+
+  // Satu angka di belakang koma hanya bila berguna: "1,2jt" informatif,
+  // "350,0jt" hanya ramai.
+  const potong = (pembagi: number, satuan: string) => {
+    const hasil = n / pembagi;
+    const teks = hasil >= 100 || Number.isInteger(hasil)
+      ? Math.round(hasil).toString()
+      : hasil.toFixed(1).replace(".", ",");
+    return `${teks}${satuan}`;
+  };
+
+  let inti: string;
+  if (n >= 1_000_000_000_000) inti = potong(1_000_000_000_000, "T");
+  else if (n >= 1_000_000_000) inti = potong(1_000_000_000, "M");
+  else if (n >= 1_000_000) inti = potong(1_000_000, "jt");
+  else if (n >= 1_000) inti = potong(1_000, "rb");
+  else inti = Math.round(n).toString();
+
+  return `${negatif ? "-" : ""}Rp ${inti}`;
+};
+
 // Menghasilkan "24 Feb 2026" — sama dengan format tanggal di dashboard.
 // timeZone dikunci agar render server & client tidak berbeda.
 export const formatTanggal = (value: Date | string) => {

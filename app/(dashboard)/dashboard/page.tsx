@@ -1,51 +1,78 @@
-import BalanceCard from "@/components/balance-card"
-import { OverviewChart } from "@/components/overview-chart"
+import { Suspense } from "react";
+
+import BalanceCard from "@/components/balance-card";
+import { LazyOverviewChart } from "@/components/charts/lazy-overview-chart";
 import { RecentTransactions } from "@/components/recent-transactions";
-import { getAuthenticatedUserId, getTransactionByUserId } from "@/app/actions/transaction";
-import { getMonthlyTrendData } from "@/app/data/analytics";
+import {
+  BalanceCardSkeleton,
+  OverviewChartSkeleton,
+  RecentTransactionsSkeleton,
+} from "@/components/dashboard/dashboard-skeletons";
+import {
+  getDashboardSummary,
+  getMonthlyTrendData,
+  getRecentTransactions,
+} from "@/app/data/analytics";
 
-export default async function DashboardPage() {
-
-  const userId = await getAuthenticatedUserId()
-
-  // 🚀 OPTIMASI: Kueri paralel untuk memotong latensi kumulatif
-  const [txData, trendChartData] = await Promise.all([
-    getTransactionByUserId(userId),
-    getMonthlyTrendData(userId),
-  ]);
-
-  const totalIncome = txData.filter((tx: any) => tx.type === "INCOME").reduce((sum: number, tx: any) => sum + tx.amount, 0);
-  const totalExpense = txData.filter((tx: any) => tx.type === "EXPENSE").reduce((sum: number, tx: any) => sum + tx.amount, 0);
-  const totalBalance = totalIncome - totalExpense;
-
+/**
+ * Dashboard.
+ *
+ * Komponen halamannya SENGAJA tidak async dan tidak menunggu apa pun. Judul
+ * dan kerangka kartu terkirim seketika, lalu tiap bagian menyusul sendiri
+ * lewat Suspense. Versi sebelumnya menunggu seluruh kueri selesai sebelum
+ * mengirim satu byte pun — layar kosong selama itu, dan itulah yang terasa
+ * sebagai "berat".
+ *
+ * Ketiga bagian ini bersaudara, bukan bersarang, jadi kueri mereka berjalan
+ * bersamaan; bagian tercepat tampil lebih dulu tanpa menunggu yang lambat.
+ */
+export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header Halaman */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Dashboard</h1>
-        <p className="text-sm text-zinc-500 mt-0.5">Ringkasan aktivitas keuangan Anda bulan ini.</p>
+        <p className="text-sm text-zinc-500 mt-0.5">
+          Ringkasan aktivitas keuangan Anda bulan ini.
+        </p>
       </div>
 
       <div className="flex flex-col gap-6 w-full">
-        {/* Bagian 1: Kartu Saldo (Otomatis menjadi 1 kolom di HP, 3 kolom di Laptop) */}
         <div className="w-full">
-          <BalanceCard balance={totalBalance} income={totalIncome} expense={totalExpense} />
+          <Suspense fallback={<BalanceCardSkeleton />}>
+            <BagianSaldo />
+          </Suspense>
         </div>
 
-        {/* Bagian 2: Grafik Ringkasan (Mengambil ruang penuh di bawah kartu) */}
         <div className="w-full">
-          <OverviewChart data={trendChartData} />
+          <Suspense fallback={<OverviewChartSkeleton />}>
+            <BagianTren />
+          </Suspense>
         </div>
 
-        {/* Bagian 3: Daftar Transaksi Terbaru.
-            getTransactionByUserId mengembalikan undefined kalau query-nya gagal
-            (blok catch di dalamnya tidak me-return apa pun), jadi nilai baliknya
-            wajib dijaga di sini — itu penyebab crash `data.map` sebelumnya. */}
         <div className="w-full">
-          <RecentTransactions data={txData.slice(0, 5)} />
+          <Suspense fallback={<RecentTransactionsSkeleton />}>
+            <BagianTerbaru />
+          </Suspense>
         </div>
       </div>
-
     </div>
   );
+}
+
+async function BagianSaldo() {
+  // Dijumlahkan di SQL — dua baris hasil, bukan seluruh riwayat transaksi.
+  const { balance, income, expense } = await getDashboardSummary();
+  return <BalanceCard balance={balance} income={income} expense={expense} />;
+}
+
+async function BagianTren() {
+  const data = await getMonthlyTrendData();
+  return <LazyOverviewChart data={data} />;
+}
+
+async function BagianTerbaru() {
+  // Hanya lima baris yang ditarik, bukan semua lalu dipotong di memori.
+  const data = await getRecentTransactions(5);
+  return <RecentTransactions data={data} />;
 }

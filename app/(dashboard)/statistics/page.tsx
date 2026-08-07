@@ -20,12 +20,11 @@ export default async function StatisticsPage({
   // Param kosong atau tidak valid jatuh ke 'this-month'.
   const range = parseTimeRange(params.range);
 
-  const { startDate, endDate } = getPeriodDates(range);
+  // Sudah berupa "YYYY-MM-DD" dari komponen waktu lokal. Jangan diturunkan
+  // sendiri dari objek Date lewat toISOString — lihat catatan zona waktu di
+  // lib/statistics/mock.ts.
+  const { startDateStr, endDateStr } = getPeriodDates(range);
 
-  const startDateStr = startDate.toISOString().split("T")[0]; // Mengubah ke string "YYYY-MM-DD"
-  const endDateStr = endDate.toISOString().split("T")[0];     // Mengubah ke string "YYYY-MM-DD"
-
-  // Kirim variabel string baru ke fungsi label teman Anda
   const periodLabel = formatRentangTanggal(startDateStr, endDateStr);
 
   return (

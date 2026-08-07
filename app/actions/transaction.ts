@@ -2,26 +2,11 @@
 
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { success } from "better-auth";
+import { getAuthenticatedUserId, requireUserId } from "@/lib/auth/session";
+import { lemparUlangKalauKontrolNext } from "@/lib/next-errors";
 
-
-/**
- * 🔐 AMBIL ID SESI SEJATI DARI SERVER (HTTP-Only Cookie)
- */
-export async function getAuthenticatedUserId() {
-  const sessionData = await auth.api.getSession({
-    headers: await headers()
-  });
-
-  if (!sessionData || !sessionData.user) {
-    throw new Error("Unauthorized: Silakan login kembali.")
-  }
-
-  return sessionData.user.id
-}
+export { getAuthenticatedUserId };
 
 
 export async function createTransaction(formData: FormData) {
@@ -98,7 +83,7 @@ export async function createTransaction(formData: FormData) {
 }
 
 
-export async function getTransactionByUserId(userId: string) {
+export async function getTransactionByUserId() {
   try {
     const userId = await getAuthenticatedUserId()
     const transaction = await prisma.transaction.findMany({
@@ -178,7 +163,11 @@ export async function getTransactionsPaginated({
   pageSize: number;
 }) {
   try {
-    const userId = await getAuthenticatedUserId();
+    // requireUserId, bukan getAuthenticatedUserId: fungsi ini dipanggil saat
+    // halaman /transactions dirender, bukan sebagai mutasi. Sesi basi harus
+    // mengalihkan ke /login, bukan menghasilkan tabel kosong yang terbaca
+    // seperti "Anda belum punya transaksi".
+    const userId = await requireUserId();
 
     const where: any = { userId };
     if (search.trim()) {
@@ -209,6 +198,11 @@ export async function getTransactionsPaginated({
 
     return { rows, total, totalAll };
   } catch (e: any) {
+    // redirect() milik requireUserId lewat sini sebagai exception. Tanpa baris
+    // ini ia ditelan, pengalihan ke /login tidak pernah terjadi, dan pengguna
+    // melihat tabel kosong.
+    lemparUlangKalauKontrolNext(e);
+
     console.error("Error fetching transactions paginated", e);
     return { rows: [], total: 0, totalAll: 0 };
   }

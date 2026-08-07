@@ -1,4 +1,5 @@
 import { getTransactionsPaginated } from "@/app/actions/transaction";
+import { lemparUlangKalauKontrolNext } from "@/lib/next-errors";
 
 export type TransactionType = "INCOME" | "EXPENSE";
 
@@ -64,6 +65,12 @@ export async function getTransactions({ search, type, category, page }: Transact
 
     return { rows, total, totalAll };
   } catch (error: any) {
+    // Lapisan kedua yang menelan redirect. getTransactionsPaginated sudah
+    // melempar ulang NEXT_REDIRECT, tapi pembungkus ini menangkapnya lagi —
+    // akibatnya pengalihan ke /login batal dan pengguna dengan sesi basi
+    // melihat "Belum ada transaksi".
+    lemparUlangKalauKontrolNext(error);
+
     console.error("Error fetching transactions", error)
     return { rows: [], total: 0, totalAll: 0 }
   }

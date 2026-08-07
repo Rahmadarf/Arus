@@ -6,6 +6,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"; // Sesuaikan jika shadcn Anda ditaruh di components/ui/table
+import { Receipt } from "lucide-react";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatRupiah } from "@/lib/format";
@@ -36,6 +38,24 @@ export function RecentTransactions({ data }: RecentTransactionsProps) {
                 <CardDescription>Daftar perputaran arus kas terbaru Anda.</CardDescription>
             </CardHeader>
             <CardContent>
+                {/* Tanpa cabang ini, pengguna baru melihat tabel berisi baris header
+                    saja — terbaca seperti tabel yang gagal memuat, bukan seperti akun
+                    yang memang belum punya transaksi. Polanya sama dengan empty state
+                    di /transactions dan /categories. */}
+                {data.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 px-6 py-14 text-center">
+                        <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-zinc-100">
+                            <Receipt className="size-5 text-zinc-400" />
+                        </div>
+                        <p className="mt-4 text-sm font-semibold text-zinc-900">
+                            Belum ada transaksi
+                        </p>
+                        <p className="mx-auto mt-1 max-w-sm text-sm text-zinc-500">
+                            Catat pemasukan atau pengeluaran pertama Anda lewat tombol
+                            Transaksi Baru.
+                        </p>
+                    </div>
+                ) : (
                 <div className="rounded-xl border border-zinc-100 overflow-hidden">
                     <Table>
                         <TableHeader className="bg-zinc-50/70">
@@ -75,6 +95,7 @@ export function RecentTransactions({ data }: RecentTransactionsProps) {
                         </TableBody>
                     </Table>
                 </div>
+                )}
             </CardContent>
         </Card>
     );

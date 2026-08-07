@@ -3,39 +3,27 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import { toast } from "sonner";
 
-import { SEED_CATEGORIES } from "@/lib/categories/seed";
+import { MUTED_COLOR } from "@/lib/statistics/utils";
 import type { Category, CategoryInput, CategoryType } from "@/lib/categories/types";
 
-import { createCategoriesByUserId, getCategoriesById, reassignAndDeleteCategory, deleteCategoryAction } from "@/app/actions/category";
-
-const testUserId = "id-user-testing-rahmad-123";
+import {
+  createCategoriesByUserId,
+  getCategoriesById,
+  reassignAndDeleteCategory,
+  deleteCategoryAction,
+  updateCategory as updateCategoryAction,
+} from "@/app/actions/category";
 
 // ============================================================================
 // LAPISAN DATA — Pemanggil server actions dengan kontrak respons yang seragam.
+//
+// Tidak ada lagi data tiruan di berkas ini. Sebelumnya `updateCategory` menulis
+// ke sebuah array di memori, jadi mengubah nama kategori terlihat berhasil di
+// layar lalu hilang begitu halaman dimuat ulang.
 // ============================================================================
 
-/** Naikkan untuk menguji error state. 0 = selalu berhasil. */
-const MUTATION_FAILURE_RATE = 0.15;
-
-/**
- * Sengaja 0. Halaman yang gagal dimuat pada 1 dari 10 refresh membuat semua
- * fitur lain mustahil diuji. Ubah ke 1 untuk melihat error state + "Coba lagi".
- */
-const LOAD_FAILURE_RATE = 0;
-
-const LATENCY_MS = 400;
-
-/** Sumber data tiruan. Diganti database saat backend siap. */
-let db: Category[] = SEED_CATEGORIES.map((item) => ({ ...item }));
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function simulateRequest(failureRate: number) {
-  await wait(LATENCY_MS);
-  if (Math.random() < failureRate) {
-    throw new Error("Jaringan bermasalah");
-  }
-}
+/** Kategori tanpa warna tersimpan memakai abu-abu palet, bukan hex sembarang. */
+const WARNA_CADANGAN = MUTED_COLOR;
 
 /**
  * 📥 AMBIL DAFTAR KATEGORI MILIK PENGGUNA AKTIF
@@ -51,11 +39,11 @@ export async function getCategories(): Promise<Category[]> {
       return []
     }
 
-    return result.data.map((cat: any) => ({
+    return result.data.map((cat) => ({
       id: cat.id,
       name: cat.name,
       type: cat.type.toLowerCase() as CategoryType,
-      color: cat.color || "A1A1AA",
+      color: cat.color || WARNA_CADANGAN,
       icon: cat.icon || undefined,
       transactionCount: cat._count.transactions,
       isDefault: false
@@ -84,7 +72,7 @@ export async function createCategories(input: any): Promise<Category> {
     id: result.data?.id as string,
     name: result.data?.name as string,
     type: result.data?.type.toLowerCase() as CategoryType,
-    color: result.data?.color || "A1A1AA",
+    color: result.data?.color || WARNA_CADANGAN,
     icon: result.data?.icon || undefined,
     transactionCount: 0,
     isDefault: false
@@ -93,24 +81,38 @@ export async function createCategories(input: any): Promise<Category> {
 }
 
 /**
- * ✏️ PERBARUI KATEGORI (TIRUAN SEMENTARA)
- * Mensimulasikan pembaruan kategori dengan latensi dan kemungkinan kegagalan acak.
+ * ✏️ PERBARUI KATEGORI
+ * Menyimpan nama, warna, dan ikon ke database lewat server action.
  * Tipe tidak ikut diubah: memindahkan kategori antar tipe akan membuat
  * transaksi pengeluaran tercatat sebagai pemasukan.
  * @param {string} id - ID kategori yang akan diperbarui.
  * @param {CategoryInput} input - Data kategori terbaru.
  * @returns {Promise<Category>} Kategori yang telah diperbarui.
- * @throws {Error} Jika kategori tidak ditemukan atau simulasi jaringan gagal.
+ * @throws {Error} Jika server action mengembalikan status gagal.
  */
-export async function updateCategory(id: string, input: CategoryInput): Promise<Category> {
-  await simulateRequest(MUTATION_FAILURE_RATE);
+export async function updateCategory(
+  id: string,
+  input: CategoryInput,
+  transactionCount = 0
+): Promise<Category> {
+  const result = await updateCategoryAction(id, input);
 
-  const index = db.findIndex((item) => item.id === id);
-  if (index === -1) throw new Error("Kategori tidak ditemukan");
+  if (!result.success || !result.data) {
+    throw new Error(result.error || "Gagal memperbarui kategori");
+  }
 
-  const updated: Category = { ...db[index], name: input.name, color: input.color, icon: input.icon };
-  db = db.map((item) => (item.id === id ? updated : item));
-  return { ...updated };
+  return {
+    id: result.data.id,
+    name: result.data.name,
+    type: result.data.type.toLowerCase() as CategoryType,
+    color: result.data.color || WARNA_CADANGAN,
+    icon: result.data.icon || undefined,
+    // Server action update tidak mengembalikan _count, jadi jumlah transaksi
+    // dibawa dari baris yang sudah ada di store — kalau dipaksa 0, angkanya
+    // akan salah sampai halaman dimuat ulang.
+    transactionCount,
+    isDefault: false,
+  };
 }
 
 /**
@@ -212,10 +214,23 @@ const CategoriesContext = createContext<CategoriesContextValue | null>(null);
 const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Terjadi kesalahan";
 
-export function CategoriesProvider({ children }: { children: React.ReactNode }) {
+export function CategoriesProvider({
+  children,
+  /**
+   * Kategori yang sudah diambil di server. Dengan ini kategori ikut terkirim
+   * bersama HTML — tanpa itu halaman harus dimuat, JavaScript diunduh,
+   * komponen dihidrasi, BARU kategori diminta lewat server action. Empat
+   * langkah berurutan sebelum dropdown "Transaksi Baru" bisa dipakai, dan
+   * itulah jeda yang terasa seperti aplikasi menggantung.
+   */
+  initialCategories,
+}: {
+  children: React.ReactNode;
+  initialCategories?: Category[];
+}) {
   const [state, dispatch] = useReducer(reducer, {
-    status: "loading",
-    items: [],
+    status: initialCategories ? "ready" : "loading",
+    items: initialCategories ?? [],
     error: null,
   });
 
@@ -232,8 +247,12 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       .catch((error) => dispatch({ type: "load-error", error: errorMessage(error) }));
   }, []);
 
-  // ��� OPTIMASI: Race-condition guard agar dispatch tidak terjadi setelah unmount
+  // Hanya mengambil sendiri kalau server tidak menitipkan apa pun. Race-condition
+  // guard menjaga dispatch tidak terjadi setelah komponen dilepas.
+  const sudahAdaData = initialCategories !== undefined;
   useEffect(() => {
+    if (sudahAdaData) return;
+
     let dibatalkan = false;
     dispatch({ type: "load-start" });
     getCategories()
@@ -246,7 +265,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
     return () => {
       dibatalkan = true;
     };
-  }, []);
+  }, [sudahAdaData]);
 
   /**
    * Pola optimistis: simpan snapshot, tampilkan hasil lebih dulu,
@@ -304,7 +323,8 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
           item.id === id ? { ...item, name: input.name, color: input.color, icon: input.icon } : item
         ),
         async () => {
-          const updated = await updateCategory(id, input);
+          const sebelumnya = itemsRef.current.find((item) => item.id === id);
+          const updated = await updateCategory(id, input, sebelumnya?.transactionCount ?? 0);
           return itemsRef.current.map((item) => (item.id === id ? updated : item));
         },
         `Kategori "${input.name}" disimpan`

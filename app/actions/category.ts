@@ -2,34 +2,17 @@
 "use server"
 
 
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { getAuthenticatedUserId } from "@/lib/auth/session";
+
+export { getAuthenticatedUserId };
 
 interface CategoryInput {
     name: string,
     type: "income" | "expense",
     color: string,
     icon?: string
-}
-
-/**
- * 🔐 AMBIL ID PENGGUNA DARI SESI AKTIF (HTTP-ONLY COOKIE)
- * Mengambil identitas asli pengguna yang sedang login untuk dipakai sebagai filter keamanan di setiap kueri.
- * @returns {Promise<string>} ID pengguna yang terautentikasi.
- * @throws {Error} Jika sesi tidak valid atau pengguna belum login.
- */
-export async function getAuthenticatedUserId() {
-    const sessionData = await auth.api.getSession({
-        headers: await headers()
-    });
-
-    if (!sessionData || !sessionData.user) {
-        throw new Error("Unauthorized: Silakan login kembali.")
-    }
-
-    return sessionData.user.id
 }
 
 /**

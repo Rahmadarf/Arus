@@ -5,7 +5,7 @@ import { PieChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CategoryTable } from "@/components/statistics/category-table";
-import { ExpenseDonutChart } from "@/components/statistics/expense-donut-chart";
+import { LazyExpenseDonutChart } from "@/components/charts/lazy-expense-donut-chart";
 import { buildChartSlices } from "@/lib/statistics/utils";
 import type { TimeRange } from "@/lib/statistics/types";
 
@@ -63,7 +63,7 @@ export async function StatisticsContent({ range }: { range: TimeRange }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ExpenseDonutChart slices={slices} totalExpense={data.totalExpense} />
+          <LazyExpenseDonutChart slices={slices} totalExpense={data.totalExpense} />
         </CardContent>
       </Card>
 

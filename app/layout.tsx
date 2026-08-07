@@ -1,21 +1,27 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// display: "swap" — teks langsung tampil dengan font sistem lalu berganti saat
+// font tiba, alih-alih menyisakan blok kosong selama unduhan.
+const inter = Inter({
   subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
 });
 
+// Geist Sans dihapus: ia diunduh di setiap kunjungan tapi tidak pernah dipakai —
+// globals.css memetakan --font-sans ke Inter, dan tidak ada satu pun kelas yang
+// memakai --font-geist-sans. Geist Mono tetap ada karena `font-mono` dipakai
+// untuk angka, badge versi, dan konfirmasi di zona bahaya.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -36,12 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={cn(
-        "h-full antialiased",
-        geistSans.variable,
-        geistMono.variable,
-        inter.variable
-      )}
+      className={cn("h-full antialiased", geistMono.variable, inter.variable)}
     >
       {/* Gunakan font-sans di body agar font Inter menjadi default aplikasi */}
       <body className="h-full font-sans bg-zinc-50 text-zinc-900 antialiased">

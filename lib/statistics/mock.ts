@@ -1,16 +1,31 @@
 // lib/statistics/mock.ts
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/auth/session";
 import type { CategoryStat, StatisticsData, TimeRange } from "@/lib/statistics/types";
 import { colorForRank, distributePercentages } from "@/lib/statistics/utils";
-
-const TESTING_USER_ID = "id-user-testing-rahmad-123";
 
 type RawCategory = {
   categoryId: string;
   categoryName: string;
   total: number;
+  /** Warna tersimpan milik kategori. null = belum pernah diberi warna. */
+  storedColor: string | null;
 };
+
+/**
+ * Format tanggal jadi "YYYY-MM-DD" memakai komponen WAKTU LOKAL.
+ *
+ * JANGAN diganti toISOString(). getPeriodDates membangun batas periode di zona
+ * lokal, jadi 1 Agustus 00:00 WIB adalah 31 Juli 17:00 UTC — toISOString akan
+ * memundurkannya sehari dan label periodenya terbaca "31 Juli – 31 Agustus"
+ * untuk rentang yang sebenarnya satu bulan penuh Agustus.
+ */
+function tanggalLokalISO(date: Date): string {
+  const bulan = String(date.getMonth() + 1).padStart(2, "0");
+  const hari = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${bulan}-${hari}`;
+}
 
 /**
  * 🛠️ HITUNG RENTANG TANGGAL DINAMIS
@@ -34,7 +49,14 @@ export function getPeriodDates(range: TimeRange) {
     endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
   }
 
-  return { startDate, endDate };
+  return {
+    startDate,
+    endDate,
+    // Label periode dipakai apa adanya oleh halaman. Dihitung di sini supaya
+    // pemanggil tidak tergoda memakai toISOString dan mengulang bug zona waktu.
+    startDateStr: tanggalLokalISO(startDate),
+    endDateStr: tanggalLokalISO(endDate),
+  };
 }
 
 /**
@@ -47,10 +69,18 @@ function buildCategoryStats(raw: RawCategory[]): CategoryStat[] {
   const sorted = [...raw].sort((a, b) => b.total - a.total);
   const percentages = distributePercentages(sorted.map((item: RawCategory) => item.total));
 
-  return sorted.map((item: RawCategory, index: number) => ({
+  return sorted.map(({ storedColor, ...item }: RawCategory, index: number) => ({
     ...item,
     percentage: percentages[index],
-    color: colorForRank(index),
+    // Warna diambil dari kategori, BUKAN dari peringkatnya. Aturan ini
+    // dijelaskan di lib/categories/types.ts: kalau warna ditentukan urutan,
+    // titik warna di /categories tidak lagi mewakili potongan donat yang sama,
+    // dan satu transaksi baru yang menggeser peringkat akan mengacak seluruh
+    // warna chart tanpa sebab yang bisa dipahami pengguna.
+    //
+    // colorForRank hanya jadi cadangan untuk kategori yang belum punya warna —
+    // createTransaction bisa membuat kategori otomatis tanpa mengisi color.
+    color: storedColor ?? colorForRank(index),
   }));
 }
 
@@ -62,12 +92,19 @@ function buildCategoryStats(raw: RawCategory[]): CategoryStat[] {
  */
 // 🚀 OPTIMASI: cache() mencegah hitung ganda untuk rentang yang sama dalam satu request
 export const getStatistics = cache(async (range: TimeRange): Promise<StatisticsData> => {
-  try {
+  // Kegagalan sengaja dibiarkan naik ke app/(dashboard)/error.tsx. Blok catch
+  // sebelumnya mengembalikan totalExpense 0, dan halaman membacanya sebagai
+  // "Belum ada pengeluaran di periode ini" — kalimat yang salah dan menenangkan
+  // justru ketika databasenya sedang bermasalah.
+  {
+    // 🔐 Wajib: tanpa ini kueri di bawah memakai user yang salah (lihat git blame).
+    const userId = await requireUserId();
+
     // Dapatkan tanggal awal dan akhir periode
-    const { startDate, endDate } = getPeriodDates(range);
+    const { startDate, endDate, startDateStr, endDateStr } = getPeriodDates(range);
 
     const baseWhere = {
-      userId: String(TESTING_USER_ID),
+      userId,
       type: "EXPENSE" as const,
       createdAt: {
         gte: startDate,
@@ -94,25 +131,26 @@ export const getStatistics = cache(async (range: TimeRange): Promise<StatisticsD
     if (grouped.length === 0) {
       return {
         range,
-        startDate: startDate.toISOString().split("T")[0],
-        endDate: endDate.toISOString().split("T")[0],
+        startDate: startDateStr,
+        endDate: endDateStr,
         totalExpense: 0,
         transactionCount: 0,
         categories: [],
       };
     }
 
-    // Ambil hanya nama kategori untuk label (bukan seluruh kolom)
-    const categoryIds = grouped.map((g: any) => g.categoryId);
-    const categoryNames = await prisma.category.findMany({
+    // Ambil nama dan warna kategori untuk label + potongan donat.
+    const categoryIds = grouped.map((g) => g.categoryId);
+    const categoryRows = await prisma.category.findMany({
       where: { id: { in: categoryIds } },
-      select: { id: true, name: true },
+      select: { id: true, name: true, color: true },
     });
-    const nameMap = new Map(categoryNames.map((c: any) => [c.id, c.name]));
+    const catMap = new Map(categoryRows.map((c) => [c.id, c]));
 
-    const rawCategories: RawCategory[] = grouped.map((g: any) => ({
+    const rawCategories: RawCategory[] = grouped.map((g) => ({
       categoryId: g.categoryId,
-      categoryName: nameMap.get(g.categoryId) ?? "Tanpa Nama",
+      categoryName: catMap.get(g.categoryId)?.name ?? "Tanpa Nama",
+      storedColor: catMap.get(g.categoryId)?.color ?? null,
       total: g._sum.amount ?? 0,
     }));
 
@@ -121,22 +159,11 @@ export const getStatistics = cache(async (range: TimeRange): Promise<StatisticsD
 
     return {
       range,
-      // Format tanggal menjadi string "YYYY-MM-DD" untuk label UI
-      startDate: startDate.toISOString().split("T")[0],
-      endDate: endDate.toISOString().split("T")[0],
+      startDate: startDateStr,
+      endDate: endDateStr,
       totalExpense: aggregate._sum.amount ?? 0,
       transactionCount: aggregate._count._all,
       categories,
-    };
-  } catch (error: any) {
-    console.error("Gagal memproses getStatistics database riil:", error);
-    return {
-      range,
-      startDate: "",
-      endDate: "",
-      totalExpense: 0,
-      transactionCount: 0,
-      categories: [],
     };
   }
 });

@@ -44,6 +44,10 @@ model Session {
   
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Postgres TIDAK membuat indeks otomatis untuk foreign key. Tanpa ini,
+  // penghapusan akun memindai seluruh tabel sesi.
+  @@index([userId])
 }
 
 model Account {
@@ -63,6 +67,8 @@ model Account {
   
   userId                String
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Verification {
@@ -90,7 +96,11 @@ model Category {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[] 
 
-  @@unique([name, type, userId]) 
+  @@unique([name, type, userId])
+
+  // Halaman /categories dan dropdown "Transaksi Baru" selalu menyaring userId.
+  // Indeks unik di atas berawalan `name`, jadi ia tidak bisa melayani kueri ini.
+  @@index([userId])
 }
 
 
@@ -108,5 +118,16 @@ model Transaction {
   categoryId  String
   // ✨ PERBAIKAN: Ganti 'onDelete: Cascade' menjadi 'onDelete: Restrict'
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  // Tabel terbesar aplikasi ini, dan sebelumnya HANYA punya primary key —
+  // setiap kueri memindai seluruh baris milik semua pengguna.
+  //
+  // Urutan kolom mengikuti bentuk kueri yang benar-benar dipakai:
+  //   [userId, createdAt desc] -> daftar transaksi, paginasi, 5 terbaru
+  //   [userId, type, createdAt] -> statistik pengeluaran, total per tipe
+  //   [categoryId] -> hitung transaksi per kategori & pengalihan saat hapus
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, type, createdAt])
+  @@index([categoryId])
 }
 

@@ -2,7 +2,19 @@ import Sidebar from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 import { Footer } from "@/components/footer";
 import { AuthProvider } from "@/lib/auth/context";
+import { redirect } from "next/navigation";
+
 import { CategoriesProvider } from "@/lib/categories/store";
+import { getCategoriesForClient } from "@/app/data/categories";
+import { getSession } from "@/lib/auth/session";
+
+/**
+ * Seluruh dashboard membaca sesi, jadi tidak ada satu pun halamannya yang bisa
+ * di-render statis saat build. Menyatakannya di sini membuat Next berhenti
+ * mencoba — tanpa ini setiap build memuntahkan "Dynamic server usage" untuk
+ * tiap rute, dan pesan itu menyamarkan error yang benar-benar perlu dibaca.
+ */
+export const dynamic = "force-dynamic";
 
 /**
  * Kerangka dashboard. Route group `(dashboard)` tidak muncul di URL, jadi
@@ -11,14 +23,37 @@ import { CategoriesProvider } from "@/lib/categories/store";
  * AuthProvider dipasang di sini, bukan di root layout, supaya halaman auth
  * tidak ikut membaca session — di sana belum ada session yang perlu dibaca.
  */
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // 🔐 SATU-SATUNYA GERBANG SESI UNTUK SELURUH DASHBOARD.
+  //
+  // proxy.ts hanya memeriksa KEBERADAAN cookie, bukan keabsahannya — memang
+  // begitu maksudnya. Akibatnya cookie basi (kedaluwarsa, akun sudah dihapus,
+  // atau BETTER_AUTH_SECRET diganti) tetap lolos ke sini. Tanpa pemeriksaan
+  // ini setiap data loader melempar "Unauthorized" satu per satu, tertangkap
+  // catch masing-masing, lalu halaman tampil dengan saldo Rp 0 dan tabel
+  // kosong — pengguna membaca itu sebagai "data saya hilang", padahal ia
+  // hanya perlu masuk lagi.
+  const session = await getSession();
+
+  if (!session?.user) {
+    // Lewat /api/sesi-berakhir, bukan /login langsung — cookienya harus dihapus
+    // dulu atau proxy.ts akan melemparnya kembali ke sini tanpa henti.
+    redirect("/api/sesi-berakhir");
+  }
+
+  // Diambil di server lalu dititipkan ke provider. Sidebar hadir di setiap
+  // halaman dashboard dan tombol "Transaksi Baru" di dalamnya butuh daftar
+  // kategori — tanpa ini setiap kunjungan menambah satu perjalanan bolak-balik
+  // lagi ke server setelah halaman selesai dihidrasi.
+  const initialCategories = await getCategoriesForClient();
+
   return (
     <AuthProvider>
-      <CategoriesProvider>
+      <CategoriesProvider initialCategories={initialCategories}>
         {/* Pembungkus Utama Dashboard */}
         <div className="flex h-screen overflow-hidden p-3 gap-3 md:p-4 md:gap-4 bg-zinc-50">
 

@@ -6,10 +6,13 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 
-// Inisialisasi klien internal Supabase Storage khusus server
+// Inisialisasi klien internal Supabase Storage khusus server.
+// WAJIB pakai SUPABASE_SERVICE_ROLE_KEY (server-only, tanpa prefix NEXT_PUBLIC_) —
+// anon key ikut ke bundle browser, jadi siapa pun bisa panggil Storage API Supabase
+// langsung dengan key itu dan menimpa file di bucket manapun, skip endpoint ini sama sekali.
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "" // Menggunakan service role agar server memiliki hak akses tulis file
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 );
 
 export async function uploadAvatarAction(formData: FormData) {

@@ -3,9 +3,6 @@
 
 import { AuthFailure, type Session } from "@/lib/auth/types";
 
-export const DEMO_EMAIL = "rahmad@arus.com";
-export const DEMO_PASSWORD = "password123";
-
 /**
  * 🚀 MASUK AKUN MELALUI FETCH API
  * Mengirimkan kredensial masuk ke endpoint internal Better Auth dan mengelola sesi otomatis via kuki browser.
